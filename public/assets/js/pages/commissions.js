@@ -1,7 +1,7 @@
 /* Page script for commissions */
 $(document).ready(function () {
             $('#commissionsTable').DataTable({
-                responsive: true,
+                responsive: false,
                 pageLength: 10,
                 order: [[7, 'desc']],
                 language: {

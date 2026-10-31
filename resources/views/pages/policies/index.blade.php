@@ -6,13 +6,15 @@
                     <h4 class="fw-bold text-dark mb-1">Active Policy Portfolio (2,134 Policies)</h4>
                     <p class="text-muted fs-13 mb-0">Track policy terms, insured amounts, renewal dates, and underwriter details.</p>
                 </div>
-                <button class="btn btn-primary btn-sm px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#newPolicyModal"><i class="feather-plus me-1"></i> Issue New Policy</button>
+                @if(auth()->user()->canWrite('policies'))
+                    <button class="btn btn-primary btn-sm px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#newPolicyModal"><i class="feather-plus me-1"></i> Issue New Policy</button>
+                @endif
             </div>
 
             <!-- Policy Table -->
             <div class="card-widget">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle w-100" id="policyDirectoryTable">
+                    <table class="table table-hover align-middle w-100" id="policyDirectoryTable" data-server-paginated>
                         <thead>
                             <tr class="fs-12 text-muted text-uppercase fw-semibold" style="background: #F8FAFC;">
                                 <th>Policy #</th>
@@ -45,7 +47,13 @@
                                         <span class="status-pill-cancellation">Cancelled</span>
                                     @endif
                                 </td>
-                                <td class="text-center"><button class="btn btn-sm btn-light py-1 px-2">Manage</button></td>
+                                <td class="text-center">
+                                    @if(auth()->user()->canWrite('policies'))
+                                        <button class="btn btn-sm btn-light py-1 px-2">Manage</button>
+                                    @else
+                                        <span class="text-muted fs-12">View Only</span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>
@@ -54,6 +62,7 @@
                             @endforelse
 </tbody>
                     </table>
+                    {{ $policies->links('pagination::bootstrap-5') }}
                 </div>
             
 
@@ -72,7 +81,7 @@
                     @csrf
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold fs-13 text-dark">Policy Holder Name *</label>
+                            <label class="form-label fw-semibold fs-13 text-dark">Policy Holder Name <span class="text-danger">*</span></label>
                             <select class="form-select" id="policyHolderInput" name="client_id" required>
                                     <option value="" selected disabled>Select a client...</option>
                                     @foreach($clients as $client)
@@ -82,13 +91,14 @@
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold fs-13 text-dark">Policy Number *</label>
+                                <label class="form-label fw-semibold fs-13 text-dark">Policy Number <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="policyNumberInput" name="policy_number" placeholder="POL-2026-XXXX" required>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold fs-13 text-dark">Underwriter Insurer</label>
                                 <select class="form-select" id="policyInsurerInput" name="insurer_id">
-                                    <option value="AIA New Zealand">AIA New Zealand</option>
+                                    <option value="AIA Health">AIA Health</option>
+                                    <option value="AIA Living">AIA Living</option>
                                     <option value="Partners Life">Partners Life</option>
                                     <option value="Chubb Life">Chubb Life</option>
                                 </select>
@@ -116,7 +126,7 @@
 
 @push('scripts')
     <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/policies.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/policies.js') }}?v={{ filemtime(public_path('assets/js/pages/policies.js')) }}"></script>
 @endpush
 
 @endsection

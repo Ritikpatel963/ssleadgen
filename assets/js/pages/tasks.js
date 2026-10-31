@@ -221,6 +221,7 @@ function handleAddNewTask() {
     renderTasksTable();
 
     $('#newTaskForm')[0].reset();
+    $('#taskClientInput').val(null).trigger('change');
     const modalEl = document.getElementById('addTaskModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();

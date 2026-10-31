@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>@yield('title', 'Dashboard') | SS Advisory Insurance Brokerage</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,14 +15,17 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendors/css/vendors.min.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/vendors/css/select2.min.css') }}?v=1.0.0" />
+    <link rel="stylesheet" href="{{ asset('assets/vendors/css/select2-theme.min.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/client-name-search.css') }}?v={{ filemtime(public_path('assets/css/client-name-search.css')) }}" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <!-- Modular Design System -->
-    <link rel="stylesheet" href="{{ asset('assets/css/styles.css?v=10.0') }}" />
-    <link rel="stylesheet" href="{{ asset('assets/css/ss-custom.css?v=2.1') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/styles.css') }}?v={{ filemtime(public_path('assets/css/styles.css')) }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/ss-custom.css') }}?v={{ filemtime(public_path('assets/css/ss-custom.css')) }}" />
 
     <link rel="icon" type="image/png" href="{{ asset('assets/images/logo.png') }}" />
     <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logo.png') }}" />
@@ -30,6 +34,11 @@
 </head>
 
 <body>
+    <script>
+        if (localStorage.getItem('nxl-mini-navigation') === 'true') {
+            document.body.classList.add('nxl-mini-navigation');
+        }
+    </script>
     <!-- Preloader -->
     <div class="nxl-preloader" id="preloader">
         <div class="preloader-content text-center">
@@ -67,7 +76,17 @@
 
     <!-- JavaScript Vendor & Init Files -->
     <script src="{{ asset('assets/vendors/js/vendors.min.js') }}"></script>
-    <script src="{{ asset('assets/vendors/js/bootstrap.min.js') }}"></script>
+    <script src="{{ asset('assets/vendors/js/select2.min.js') }}"></script>
+    <script>
+        // Keep the custom Clients submenu out of the vendor's animated startup collapse.
+        const clientsSlideUp = $.fn.slideUp;
+        $.fn.slideUp = function () {
+            if (this.hasClass('nxl-submenu') && this.closest('.nxl-custom-hasmenu').length) {
+                return this.css('display', 'none');
+            }
+            return clientsSlideUp.apply(this, arguments);
+        };
+    </script>
     <script src="{{ asset('assets/vendors/js/nxlNavigation.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -75,9 +94,12 @@
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
     <script src="{{ asset('assets/vendors/js/apexcharts.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="{{ asset('assets/js/common-init.min.js') }}"></script>
-    <script src="{{ asset('assets/js/script.js?v=1.3') }}"></script>
+    <script src="{{ asset('assets/js/script.js') }}?v={{ filemtime(public_path('assets/js/script.js')) }}"></script>
+    <script src="{{ asset('assets/js/dashboard-redesign.js') }}?v={{ filemtime(public_path('assets/js/dashboard-redesign.js')) }}"></script>
+    <script src="{{ asset('assets/js/client-name-search.js') }}?v={{ time() }}"></script>
+    <script>window.categoryMasterOptions = @json($categoryMasterOptions ?? []);</script>
+    <script src="{{ asset('assets/js/category-master-options.js') }}?v={{ filemtime(public_path('assets/js/category-master-options.js')) }}"></script>
     
     @stack('scripts')
 </body>

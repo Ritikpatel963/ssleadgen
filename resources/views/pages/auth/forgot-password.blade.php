@@ -93,7 +93,7 @@
             <form id="forgotPasswordForm" onsubmit="handleSendResetLink(event);">
                 <!-- EMAIL INPUT -->
                 <div class="mb-4">
-                    <label class="form-label fs-12 fw-bold text-dark">Work Email Address *</label>
+                    <label class="form-label fs-12 fw-bold text-dark">Work Email Address <span class="text-danger">*</span></label>
                     <div class="auth-input-group">
                         <i class="feather-mail auth-icon"></i>
                         <input type="email" id="resetEmailInput" class="form-control"

@@ -59,7 +59,7 @@
     flex-shrink: 0 !important;
 }
 
-/* 3. Header Bar Profile Avatar & Bell Strict Size Constraints (Fixes Giant Avatar Bug!) */
+/* 3. Header Bar Profile Avatar & Bell Strict Size Constraints */
 .user-avatar-img, .header-user-avatar-img {
     width: 38px !important;
     height: 38px !important;
@@ -128,7 +128,7 @@
     line-height: 1 !important;
 }
 
-/* 4. Header Left Title & Breadcrumb Clean Stack (Fixes Overlapping Title/Breadcrumb Bug!) */
+/* 4. Header Left Title & Breadcrumb Clean Stack */
 .header-title-block {
     display: flex;
     flex-direction: column;
@@ -269,7 +269,7 @@
     color: var(--ss-text-dark);
 }
 
-/* 8. DataTables Filter & Length Controls Alignment (Fixes Search Bar Same Row & Right Alignment Across All Pages) */
+/* 8. DataTables Filter & Length Controls Alignment */
 .dataTables_wrapper .row:first-child {
     display: flex !important;
     flex-direction: row !important;
@@ -343,7 +343,6 @@
     text-align: right !important;
 }
 
-
 /* Style for custom header row created dynamically in script.js */
 .dt-mobile-header-row {
     display: flex !important;
@@ -385,31 +384,27 @@ body.nxl-mini-navigation .nxl-item.nxl-hasmenu .nxl-submenu {
     display: none !important;
 }
 
+.nxl-item.nxl-custom-hasmenu:not(.clients-menu-expanded) .nxl-submenu {
+    display: none !important;
+}
+
 /* Force Clients parent navigation item to be persistently active (cyan background) on all pages */
-.nxl-item.nxl-hasmenu.active > a,
-.nxl-item.nxl-hasmenu:has(a .feather-users) > a {
+.nxl-item.nxl-custom-hasmenu.active > a {
     background-color: var(--ss-cyan) !important;
     color: #ffffff !important;
     border-radius: 4px;
 }
 
-.nxl-item.nxl-hasmenu.active > a *,
-.nxl-item.nxl-hasmenu:has(a .feather-users) > a * {
+.nxl-item.nxl-custom-hasmenu.active > a * {
     color: #ffffff !important;
 }
 
-/* Force Clients submenu to always be open in expanded sidebar state on all pages */
-body:not(.nxl-mini-navigation) .nxl-item.nxl-hasmenu.active .nxl-submenu,
-body:not(.nxl-mini-navigation) .nxl-item.nxl-hasmenu:has(a .feather-users) .nxl-submenu {
+/* Show the Clients submenu only on active client pages or after a user toggle. */
+body:not(.nxl-mini-navigation) .nxl-item.nxl-custom-hasmenu.clients-menu-expanded .nxl-submenu {
     display: block !important;
     padding: 4px 0 4px 43px !important;
     margin: 0 !important;
 }
-
-
-
-
-
 
 /* Sectioned Modal Design (Matches Inforce Client Module Popups) */
 .modal-section-card {
@@ -435,3 +430,154 @@ body:not(.nxl-mini-navigation) .nxl-item.nxl-hasmenu:has(a .feather-users) .nxl-
     border-bottom: 1px solid #E2E8F0 !important;
     padding-bottom: 8px !important;
 }
+
+/* Hide floating scrollbar rails and arrows on table containers */
+.table-responsive .ps__rail-x,
+.table-responsive .ps__rail-y,
+.dataTables_wrapper .ps__rail-x,
+.dataTables_wrapper .ps__rail-y,
+.card-widget .ps__rail-x,
+.card-widget .ps__rail-y {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================================
+   9. KANBAN PIPELINE BOARD ENGINE
+   ========================================================================== */
+.card-widget-kanban {
+    background-color: #F8FAFC !important;
+    border: 1px solid var(--ss-card-border) !important;
+    border-radius: 14px !important;
+    padding: 16px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+#kanbanViewContainer {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+#kanbanViewContainer > .kanban-column-box {
+    flex: 0 0 max(280px, 25%);
+    max-width: none;
+}
+
+.kanban-card-dropzone {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 4px 6px 12px 2px !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #cbd5e1 transparent !important;
+}
+
+/* Children of the dropzone must never shrink (this was cutting the cards off) */
+.kanban-card-dropzone > * {
+    flex-shrink: 0 !important;
+}
+
+.kanban-card-dropzone::-webkit-scrollbar {
+    width: 6px !important;
+}
+
+.kanban-card-dropzone::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+.kanban-card-dropzone::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1 !important;
+    border-radius: 6px !important;
+}
+
+.kanban-card-dropzone::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8 !important;
+}
+
+/* Lead card.
+   NOTE: do NOT use "border: ... !important" here. The left colored strip comes
+   from the Bootstrap classes "border-start border-4 border-primary" in the HTML.
+   The light outline is drawn with box-shadow so those classes keep working. */
+.lead-kanban-card {
+    display: block !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background-color: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 14px 16px !important;
+    border: 0;
+    box-shadow:
+        0 0 0 1px #E2E8F0,
+        0 1px 3px rgba(15, 23, 42, 0.06),
+        0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    box-sizing: border-box !important;
+    margin-bottom: 0 !important;
+    overflow: visible !important;
+    position: relative;
+}
+
+.lead-kanban-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow:
+        0 0 0 1px #E2E8F0,
+        0 4px 10px rgba(15, 23, 42, 0.1) !important;
+}
+
+.lead-kanban-card .lead-name-text {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    line-height: 1.4 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+.lead-kanban-card .lead-source-badge {
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+    align-self: flex-start !important;
+}
+
+.lead-kanban-card .lead-meta-row {
+    font-size: 11px !important;
+    color: #64748B !important;
+    margin-top: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+}
+
+.lead-kanban-card .lead-details-link {
+    color: #00A8B5 !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    text-decoration: none !important;
+}
+
+/* Hide DataTables processing overlay on all tables; global default is also set in script.js
+   but this catches any table initialised before the default runs or by a plugin. */
+div.dataTables_processing, div.dt-processing { display: none !important; }

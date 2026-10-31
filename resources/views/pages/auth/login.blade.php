@@ -78,7 +78,7 @@
             <form id="loginForm" onsubmit="event.preventDefault(); window.location.href='index.html';">
                 <!-- EMAIL INPUT -->
                 <div class="mb-3">
-                    <label class="form-label fs-12 fw-bold text-dark">Work Email Address *</label>
+                    <label class="form-label fs-12 fw-bold text-dark">Work Email Address <span class="text-danger">*</span></label>
                     <div class="auth-input-group">
                         <i class="feather-mail auth-icon"></i>
                         <input type="email" class="form-control" placeholder="advisor@ssadvisory.co.nz"
@@ -86,28 +86,28 @@
                     </div>
                 </div>
 
-                <!-- PASSWORD INPUT -->
                 <div class="mb-3">
                     <div class="d-flex align-items-center justify-content-between mb-1">
-                        <label class="form-label fs-12 fw-bold text-dark mb-0">Password *</label>
-                        <a href="forgot-password.html"
+                        <label class="form-label fs-12 fw-bold text-dark mb-0">Password <span class="text-danger">*</span></label>
+                        <a href="{{ route('password.request') }}"
                             class="fs-12 text-primary fw-semibold text-decoration-none">Forgot Password?</a>
                     </div>
                     <div class="auth-input-group">
                         <i class="feather-lock auth-icon"></i>
                         <input type="password" id="passwordInput" class="form-control" placeholder="••••••••••••"
-                            value="password123" required />
-                        <i class="feather-eye password-toggle" id="togglePasswordBtn"
-                            onclick="togglePasswordVisibility()"></i>
+                            required />
+                        <button type="button" class="password-toggle" id="togglePasswordBtn">
+                            <i class="feather-eye"></i>
+                        </button>
                     </div>
                 </div>
 
                 <!-- REMEMBER ME -->
                 <div class="d-flex align-items-center justify-content-between mb-4">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="rememberMeCheck" checked />
+                        <input class="form-check-input" type="checkbox" id="rememberMeCheck" name="remember" checked />
                         <label class="form-check-input-label fs-13 text-muted fw-semibold"
-                            for="rememberMeCheck">Remember me for 30 days</label>
+                            for="rememberMeCheck">Remember me (Keep me signed in for 60 days)</label>
                     </div>
                 </div>
 

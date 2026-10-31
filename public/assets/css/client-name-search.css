@@ -1,0 +1,72 @@
+/* Keep searchable client selects consistent with the regular form controls. */
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container .select2-selection--single {
+    height: 38px;
+    border: 1px solid #dbe3ef;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.select2-container .select2-selection__rendered {
+    padding-left: 0.75rem;
+    line-height: 36px;
+    color: #18283d;
+}
+
+.select2-container .select2-selection__arrow {
+    top: 0;
+    right: 0.55rem;
+    width: 1.25rem;
+    height: 36px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+    position: absolute;
+    top: 13px;
+    left: 3px;
+    width: 9px;
+    height: 9px;
+    margin: 0;
+    border: solid #26384d !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg) !important;
+}
+
+.select2-container--open .select2-selection--single {
+    border-color: #00a8b5;
+    box-shadow: 0 0 0 0.2rem rgba(0, 168, 181, 0.15);
+}
+
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    top: 17px;
+    transform: rotate(225deg) !important;
+}
+
+.select2-container .select2-selection__clear {
+    display: none;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid #dbe3ef;
+    border-radius: 0.375rem;
+    padding: 0.45rem 0.65rem;
+}
+
+.select2-dropdown {
+    z-index: 1065 !important;
+    border-color: #dbe3ef !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #00a8b5 !important;
+    color: #fff !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #e6f7f8;
+    color: #00808a;
+}

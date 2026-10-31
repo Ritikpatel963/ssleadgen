@@ -115,156 +115,10 @@ body.auth-body {
             box-shadow: 0 0 0 4px rgba(0, 168, 181, 0.12);
         }
 
-        .btn-auth-primary {
-            background-color: #081B33;
-            color: #ffffff;
-            height: 50px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            border: none;
-            transition: var(--transition-fast);
-            box-shadow: 0 4px 12px rgba(8, 27, 51, 0.15);
-        }
-
-        .btn-auth-primary:hover {
-            background-color: #0F294A;
-            color: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(8, 27, 51, 0.25);
-        }
-
-        @media (max-width: 991.98px) {
-            .auth-container {
-                flex-direction: column;
-                max-width: 500px;
-            }
-
-            .auth-hero-panel {
-                padding: 35px 30px;
-            }
-
-            .auth-form-panel {
-                padding: 35px 30px;
-            }
-        }
-
-
-body.auth-body {
-            background-color: #F8FAFC;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .auth-container {
-            width: 100%;
-            max-width: 1050px;
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(8, 27, 51, 0.08);
-            overflow: hidden;
-            display: flex;
-            min-height: 620px;
-        }
-
-        .auth-hero-panel {
-            flex: 1.1;
-            background: linear-gradient(135deg, #081B33 0%, #0F294A 60%, #00A8B5 100%);
-            padding: 50px 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            color: #ffffff;
-            overflow: hidden;
-        }
-
-        .auth-hero-panel::before {
-            content: '';
-            position: absolute;
-            top: -80px;
-            right: -80px;
-            width: 260px;
-            height: 260px;
-            border-radius: 50%;
-            background: rgba(0, 168, 181, 0.15);
-            filter: blur(40px);
-        }
-
-        .auth-hero-panel::after {
-            content: '';
-            position: absolute;
-            bottom: -100px;
-            left: -100px;
-            width: 320px;
-            height: 320px;
-            border-radius: 50%;
-            background: rgba(2, 132, 199, 0.2);
-            filter: blur(50px);
-        }
-
-        .auth-form-panel {
-            flex: 1;
-            padding: 50px 45px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background: #ffffff;
-        }
-
-        .auth-logo-brand img {
-            height: 42px;
-            width: auto;
-        }
-
-        .auth-feature-pill {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 12px 18px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .auth-input-group {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .auth-input-group i.auth-icon {
-            position: absolute;
-            left: 16px;
-            color: #94A3B8;
-            font-size: 16px;
-            transition: var(--transition-fast);
-        }
-
-        .auth-input-group .form-control {
-            padding-left: 46px;
-            padding-right: 46px;
-            height: 50px;
-            border-radius: 10px;
-            border: 1.5px solid #E2E8F0;
-            background-color: #F8FAFC;
-            font-size: 14px;
-            font-weight: 500;
-            transition: var(--transition-fast);
-        }
-
-        .auth-input-group .form-control:focus {
-            background-color: #ffffff;
-            border-color: #00A8B5;
-            box-shadow: 0 0 0 4px rgba(0, 168, 181, 0.12);
+        /* Fix for password dots not rendering in custom fonts */
+        input[type="password"].form-control {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            letter-spacing: 2px;
         }
 
         .auth-input-group .password-toggle {
@@ -273,6 +127,12 @@ body.auth-body {
             color: #94A3B8;
             cursor: pointer;
             font-size: 16px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: var(--transition-fast);
         }
 
@@ -300,17 +160,3 @@ body.auth-body {
             box-shadow: 0 6px 16px rgba(8, 27, 51, 0.25);
         }
 
-        @media (max-width: 991.98px) {
-            .auth-container {
-                flex-direction: column;
-                max-width: 500px;
-            }
-
-            .auth-hero-panel {
-                padding: 35px 30px;
-            }
-
-            .auth-form-panel {
-                padding: 35px 30px;
-            }
-        }

@@ -1,16 +1,34 @@
 @extends('layouts.app')
 @section('title', 'Login Client Directory')
 @section('content')
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        <i class="feather-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if ($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        <i class="feather-alert-circle me-2"></i> <strong>Validation Errors:</strong>
+        <ul class="mb-0 mt-1">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                    <h4 class="fw-bold text-dark mb-1">Login Client Directory (42 Pending Processing)</h4>
+                    <h4 class="fw-bold text-dark mb-1">Login Client Directory <span id="loginClientsCount"></span></h4>
                     <p class="text-muted fs-13 mb-0">Clients with pending policy submissions, compliance audits, and RoA requirements.</p>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <button class="btn btn-outline-primary btn-sm px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#importLoginClientsModal">
+                    <button type="button" class="btn btn-outline-primary btn-sm px-3 fw-bold" onclick="openImportClientsModal()">
                         <i class="feather-upload me-1"></i> Import Clients
                     </button>
-                    <button class="btn btn-primary btn-sm px-3 fw-bold" onclick="$('#loginModalTitle').text('Add New Login Client Entry'); $('#addLoginClientForm')[0].reset(); $('#addLoginClientModal').modal('show');">
+                    <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="openAddLoginClientModal()">
                         <i class="feather-plus me-1"></i> Add Login Client
                     </button>
                 </div>
@@ -21,7 +39,7 @@
                 <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3 flex-wrap flex-fill">
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search (First, Last Name)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterClientSearch" class="form-control dash-filter-input"
@@ -29,15 +47,15 @@
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Number Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Mobile Number</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterNumberSearch" class="form-control dash-filter-input"
-                                    placeholder="Search by phone number" />
+                                    placeholder="Search by mobile number" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address (Street Address, Pin code, City, Suburb)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterAddressSearch" class="form-control dash-filter-input"
@@ -48,8 +66,7 @@
                             <label class="fs-11 fw-bold text-muted mb-1 d-block">Date of Birth Search</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-calendar"></i>
-                                <input type="text" id="filterDobSearch" class="form-control dash-filter-input"
-                                    placeholder="DD / MM / YYYY" />
+                                <input type="date" id="filterDobSearch" class="form-control dash-filter-input" />
                             </div>
                         </div>
                     </div>
@@ -64,7 +81,7 @@
             <!-- Table Card -->
             <div class="card-widget">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle w-100" id="loginClientsTable">
+                    <table class="table table-hover align-middle w-100" id="loginClientsTable" data-server-paginated data-can-write="{{ auth()->user()->canWrite('clients_login') ? '1' : '0' }}">
                         <thead>
                             <tr class="fs-12 text-muted text-uppercase fw-semibold" style="background: #F8FAFC;">
                                 <th>Policy No.</th>
@@ -79,780 +96,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5458</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 fw-bold text-dark">Kishore Kumar</td>
-                                <td class="fs-13 text-muted">021 754 2824</td>
-                                <td class="fs-13 text-muted">14/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$7700</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5458', 'Chubb Life', 'Kishore', 'Kumar', '01/12/1983', '021 754 2824', 'kishore@example.com', '12 Main St', 'Central', 'Auckland', '1010', '14/08/2026', '$7700', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5458', 'Chubb Life', 'Kishore', 'Kumar', '01/12/1983', '021 754 2824', 'kishore@example.com', '12 Main St', 'Central', 'Auckland', '1010', '14/08/2026', '$7700', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Kishore Kumar', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Kishore Kumar', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Kishore Kumar', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5475</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 fw-bold text-dark">Suman Pappula</td>
-                                <td class="fs-13 text-muted">021 792 9935</td>
-                                <td class="fs-13 text-muted">17/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2900</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5475', 'Fidelity Life', 'Suman', 'Pappula', '03/10/1988', '021 792 9935', 'suman@example.com', '12 Main St', 'Central', 'Auckland', '1010', '17/08/2026', '$2900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5475', 'Fidelity Life', 'Suman', 'Pappula', '03/10/1988', '021 792 9935', 'suman@example.com', '12 Main St', 'Central', 'Auckland', '1010', '17/08/2026', '$2900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Suman Pappula', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Suman Pappula', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Suman Pappula', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-2816</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">Rahul Sharma</td>
-                                <td class="fs-13 text-muted">021 338 9279</td>
-                                <td class="fs-13 text-muted">19/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$7700</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-2816', 'Partners Life', 'Rahul', 'Sharma', '20/01/1992', '021 338 9279', 'rahul@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$7700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-2816', 'Partners Life', 'Rahul', 'Sharma', '20/01/1992', '021 338 9279', 'rahul@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$7700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Rahul Sharma', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Rahul Sharma', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Rahul Sharma', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-4612</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 fw-bold text-dark">Priya Patel</td>
-                                <td class="fs-13 text-muted">021 559 5557</td>
-                                <td class="fs-13 text-muted">20/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2200</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-4612', 'Chubb Life', 'Priya', 'Patel', '26/01/1980', '021 559 5557', 'priya@example.com', '12 Main St', 'Central', 'Auckland', '1010', '20/08/2026', '$2200', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-4612', 'Chubb Life', 'Priya', 'Patel', '26/01/1980', '021 559 5557', 'priya@example.com', '12 Main St', 'Central', 'Auckland', '1010', '20/08/2026', '$2200', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Priya Patel', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Priya Patel', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Priya Patel', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5938</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 fw-bold text-dark">Sarah Connor</td>
-                                <td class="fs-13 text-muted">021 320 6514</td>
-                                <td class="fs-13 text-muted">05/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$4700</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5938', 'Fidelity Life', 'Sarah', 'Connor', '04/02/1987', '021 320 6514', 'sarah@example.com', '12 Main St', 'Central', 'Auckland', '1010', '05/08/2026', '$4700', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5938', 'Fidelity Life', 'Sarah', 'Connor', '04/02/1987', '021 320 6514', 'sarah@example.com', '12 Main St', 'Central', 'Auckland', '1010', '05/08/2026', '$4700', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Sarah Connor', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Sarah Connor', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Sarah Connor', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-2965</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 fw-bold text-dark">Amit Miller</td>
-                                <td class="fs-13 text-muted">021 370 1711</td>
-                                <td class="fs-13 text-muted">16/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$7000</td>
-                                <td><span class="badge bg-soft-orange text-orange fs-11">In Review</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-2965', 'AIA Life', 'Amit', 'Miller', '24/08/1992', '021 370 1711', 'amit@example.com', '12 Main St', 'Central', 'Auckland', '1010', '16/08/2026', '$7000', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-2965', 'AIA Life', 'Amit', 'Miller', '24/08/1992', '021 370 1711', 'amit@example.com', '12 Main St', 'Central', 'Auckland', '1010', '16/08/2026', '$7000', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Amit Miller', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Amit Miller', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Amit Miller', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-7229</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 fw-bold text-dark">David Chang</td>
-                                <td class="fs-13 text-muted">021 400 6925</td>
-                                <td class="fs-13 text-muted">08/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$7900</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-7229', 'Asteron Life', 'David', 'Chang', '19/04/1977', '021 400 6925', 'david@example.com', '12 Main St', 'Central', 'Auckland', '1010', '08/08/2026', '$7900', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-7229', 'Asteron Life', 'David', 'Chang', '19/04/1977', '021 400 6925', 'david@example.com', '12 Main St', 'Central', 'Auckland', '1010', '08/08/2026', '$7900', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('David Chang', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('David Chang', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('David Chang', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-7505</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 fw-bold text-dark">Michael Singh</td>
-                                <td class="fs-13 text-muted">021 181 4814</td>
-                                <td class="fs-13 text-muted">14/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$1700</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-7505', 'AIA Life', 'Michael', 'Singh', '28/02/1987', '021 181 4814', 'michael@example.com', '12 Main St', 'Central', 'Auckland', '1010', '14/08/2026', '$1700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-7505', 'AIA Life', 'Michael', 'Singh', '28/02/1987', '021 181 4814', 'michael@example.com', '12 Main St', 'Central', 'Auckland', '1010', '14/08/2026', '$1700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Michael Singh', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Michael Singh', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Michael Singh', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6129</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 fw-bold text-dark">Aarav Cooper</td>
-                                <td class="fs-13 text-muted">021 479 6820</td>
-                                <td class="fs-13 text-muted">14/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$8800</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6129', 'Asteron Life', 'Aarav', 'Cooper', '07/11/1983', '021 479 6820', 'aarav@example.com', '12 Main St', 'Central', 'Auckland', '1010', '14/08/2026', '$8800', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6129', 'Asteron Life', 'Aarav', 'Cooper', '07/11/1983', '021 479 6820', 'aarav@example.com', '12 Main St', 'Central', 'Auckland', '1010', '14/08/2026', '$8800', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Aarav Cooper', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Aarav Cooper', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Aarav Cooper', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5743</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 fw-bold text-dark">Vandana Taylor</td>
-                                <td class="fs-13 text-muted">021 846 5010</td>
-                                <td class="fs-13 text-muted">13/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$1700</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5743', 'AIA Life', 'Vandana', 'Taylor', '06/08/1987', '021 846 5010', 'vandana@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$1700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5743', 'AIA Life', 'Vandana', 'Taylor', '06/08/1987', '021 846 5010', 'vandana@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$1700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Vandana Taylor', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Vandana Taylor', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Vandana Taylor', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-8538</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">James Walker</td>
-                                <td class="fs-13 text-muted">021 963 1916</td>
-                                <td class="fs-13 text-muted">03/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$7000</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-8538', 'Partners Life', 'James', 'Walker', '08/01/1985', '021 963 1916', 'james@example.com', '12 Main St', 'Central', 'Auckland', '1010', '03/08/2026', '$7000', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-8538', 'Partners Life', 'James', 'Walker', '08/01/1985', '021 963 1916', 'james@example.com', '12 Main St', 'Central', 'Auckland', '1010', '03/08/2026', '$7000', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('James Walker', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('James Walker', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('James Walker', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-8138</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 fw-bold text-dark">Olivia Patel</td>
-                                <td class="fs-13 text-muted">021 680 6155</td>
-                                <td class="fs-13 text-muted">13/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$8200</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-8138', 'Asteron Life', 'Olivia', 'Patel', '07/11/1990', '021 680 6155', 'olivia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$8200', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-8138', 'Asteron Life', 'Olivia', 'Patel', '07/11/1990', '021 680 6155', 'olivia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$8200', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Olivia Patel', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Olivia Patel', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Olivia Patel', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6083</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">Ethan Smith</td>
-                                <td class="fs-13 text-muted">021 371 3287</td>
-                                <td class="fs-13 text-muted">08/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$5700</td>
-                                <td><span class="badge bg-soft-orange text-orange fs-11">In Review</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6083', 'Partners Life', 'Ethan', 'Smith', '08/12/1992', '021 371 3287', 'ethan@example.com', '12 Main St', 'Central', 'Auckland', '1010', '08/08/2026', '$5700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6083', 'Partners Life', 'Ethan', 'Smith', '08/12/1992', '021 371 3287', 'ethan@example.com', '12 Main St', 'Central', 'Auckland', '1010', '08/08/2026', '$5700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Ethan Smith', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Ethan Smith', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Ethan Smith', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-9363</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 fw-bold text-dark">Arjun Johnson</td>
-                                <td class="fs-13 text-muted">021 508 6930</td>
-                                <td class="fs-13 text-muted">17/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$8000</td>
-                                <td><span class="badge bg-soft-orange text-orange fs-11">In Review</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-9363', 'AIA Life', 'Arjun', 'Johnson', '08/03/1991', '021 508 6930', 'arjun@example.com', '12 Main St', 'Central', 'Auckland', '1010', '17/08/2026', '$8000', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-9363', 'AIA Life', 'Arjun', 'Johnson', '08/03/1991', '021 508 6930', 'arjun@example.com', '12 Main St', 'Central', 'Auckland', '1010', '17/08/2026', '$8000', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Arjun Johnson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Arjun Johnson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Arjun Johnson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6752</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 fw-bold text-dark">Neha Williams</td>
-                                <td class="fs-13 text-muted">021 256 3621</td>
-                                <td class="fs-13 text-muted">08/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2800</td>
-                                <td><span class="badge bg-soft-orange text-orange fs-11">In Review</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6752', 'Fidelity Life', 'Neha', 'Williams', '26/11/1988', '021 256 3621', 'neha@example.com', '12 Main St', 'Central', 'Auckland', '1010', '08/08/2026', '$2800', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6752', 'Fidelity Life', 'Neha', 'Williams', '26/11/1988', '021 256 3621', 'neha@example.com', '12 Main St', 'Central', 'Auckland', '1010', '08/08/2026', '$2800', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Neha Williams', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Neha Williams', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Neha Williams', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-4232</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 fw-bold text-dark">John Brown</td>
-                                <td class="fs-13 text-muted">021 579 9669</td>
-                                <td class="fs-13 text-muted">20/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$3400</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-4232', 'Fidelity Life', 'John', 'Brown', '09/09/1975', '021 579 9669', 'john@example.com', '12 Main St', 'Central', 'Auckland', '1010', '20/08/2026', '$3400', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-4232', 'Fidelity Life', 'John', 'Brown', '09/09/1975', '021 579 9669', 'john@example.com', '12 Main St', 'Central', 'Auckland', '1010', '20/08/2026', '$3400', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('John Brown', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('John Brown', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('John Brown', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-9095</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 fw-bold text-dark">Emma Jones</td>
-                                <td class="fs-13 text-muted">021 214 5808</td>
-                                <td class="fs-13 text-muted">19/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$8900</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-9095', 'Chubb Life', 'Emma', 'Jones', '14/03/1989', '021 214 5808', 'emma@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$8900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-9095', 'Chubb Life', 'Emma', 'Jones', '14/03/1989', '021 214 5808', 'emma@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$8900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Emma Jones', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Emma Jones', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Emma Jones', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6179</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 fw-bold text-dark">Robert Garcia</td>
-                                <td class="fs-13 text-muted">021 880 3927</td>
-                                <td class="fs-13 text-muted">15/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2300</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6179', 'Fidelity Life', 'Robert', 'Garcia', '17/02/1995', '021 880 3927', 'robert@example.com', '12 Main St', 'Central', 'Auckland', '1010', '15/08/2026', '$2300', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6179', 'Fidelity Life', 'Robert', 'Garcia', '17/02/1995', '021 880 3927', 'robert@example.com', '12 Main St', 'Central', 'Auckland', '1010', '15/08/2026', '$2300', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Robert Garcia', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Robert Garcia', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Robert Garcia', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5961</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">Sophia Miller</td>
-                                <td class="fs-13 text-muted">021 482 3646</td>
-                                <td class="fs-13 text-muted">19/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2200</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5961', 'Partners Life', 'Sophia', 'Miller', '18/09/1975', '021 482 3646', 'sophia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$2200', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5961', 'Partners Life', 'Sophia', 'Miller', '18/09/1975', '021 482 3646', 'sophia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$2200', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Sophia Miller', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Sophia Miller', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Sophia Miller', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6085</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 fw-bold text-dark">William Davis</td>
-                                <td class="fs-13 text-muted">021 471 6038</td>
-                                <td class="fs-13 text-muted">15/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$1900</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6085', 'Chubb Life', 'William', 'Davis', '08/01/1982', '021 471 6038', 'william@example.com', '12 Main St', 'Central', 'Auckland', '1010', '15/08/2026', '$1900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6085', 'Chubb Life', 'William', 'Davis', '08/01/1982', '021 471 6038', 'william@example.com', '12 Main St', 'Central', 'Auckland', '1010', '15/08/2026', '$1900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('William Davis', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('William Davis', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('William Davis', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5703</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 fw-bold text-dark">Isabella Rodriguez</td>
-                                <td class="fs-13 text-muted">021 878 9727</td>
-                                <td class="fs-13 text-muted">03/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$9300</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5703', 'AIA Life', 'Isabella', 'Rodriguez', '25/03/1979', '021 878 9727', 'isabella@example.com', '12 Main St', 'Central', 'Auckland', '1010', '03/08/2026', '$9300', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5703', 'AIA Life', 'Isabella', 'Rodriguez', '25/03/1979', '021 878 9727', 'isabella@example.com', '12 Main St', 'Central', 'Auckland', '1010', '03/08/2026', '$9300', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Isabella Rodriguez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Isabella Rodriguez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Isabella Rodriguez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-1672</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 fw-bold text-dark">Daniel Martinez</td>
-                                <td class="fs-13 text-muted">021 640 7932</td>
-                                <td class="fs-13 text-muted">19/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$3900</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-1672', 'Chubb Life', 'Daniel', 'Martinez', '07/09/1981', '021 640 7932', 'daniel@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$3900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-1672', 'Chubb Life', 'Daniel', 'Martinez', '07/09/1981', '021 640 7932', 'daniel@example.com', '12 Main St', 'Central', 'Auckland', '1010', '19/08/2026', '$3900', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Daniel Martinez', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Daniel Martinez', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Daniel Martinez', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-9214</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 fw-bold text-dark">Mia Hernandez</td>
-                                <td class="fs-13 text-muted">021 629 8397</td>
-                                <td class="fs-13 text-muted">02/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$7200</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-9214', 'Fidelity Life', 'Mia', 'Hernandez', '04/04/1982', '021 629 8397', 'mia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '02/08/2026', '$7200', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-9214', 'Fidelity Life', 'Mia', 'Hernandez', '04/04/1982', '021 629 8397', 'mia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '02/08/2026', '$7200', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Mia Hernandez', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Mia Hernandez', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Mia Hernandez', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-2381</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 fw-bold text-dark">Joseph Lopez</td>
-                                <td class="fs-13 text-muted">021 667 4770</td>
-                                <td class="fs-13 text-muted">06/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2000</td>
-                                <td><span class="badge bg-soft-orange text-orange fs-11">In Review</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-2381', 'Asteron Life', 'Joseph', 'Lopez', '19/04/1975', '021 667 4770', 'joseph@example.com', '12 Main St', 'Central', 'Auckland', '1010', '06/08/2026', '$2000', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-2381', 'Asteron Life', 'Joseph', 'Lopez', '19/04/1975', '021 667 4770', 'joseph@example.com', '12 Main St', 'Central', 'Auckland', '1010', '06/08/2026', '$2000', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Joseph Lopez', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Joseph Lopez', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Joseph Lopez', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-8199</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 fw-bold text-dark">Charlotte Gonzalez</td>
-                                <td class="fs-13 text-muted">021 169 1514</td>
-                                <td class="fs-13 text-muted">17/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$9300</td>
-                                <td><span class="badge bg-soft-orange text-orange fs-11">In Review</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-8199', 'Asteron Life', 'Charlotte', 'Gonzalez', '28/06/1977', '021 169 1514', 'charlotte@example.com', '12 Main St', 'Central', 'Auckland', '1010', '17/08/2026', '$9300', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-8199', 'Asteron Life', 'Charlotte', 'Gonzalez', '28/06/1977', '021 169 1514', 'charlotte@example.com', '12 Main St', 'Central', 'Auckland', '1010', '17/08/2026', '$9300', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Charlotte Gonzalez', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Charlotte Gonzalez', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Charlotte Gonzalez', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-7108</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">Matthew Wilson</td>
-                                <td class="fs-13 text-muted">021 652 3167</td>
-                                <td class="fs-13 text-muted">13/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$6700</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Sent to Compliance</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-7108', 'Partners Life', 'Matthew', 'Wilson', '24/10/1993', '021 652 3167', 'matthew@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$6700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-7108', 'Partners Life', 'Matthew', 'Wilson', '24/10/1993', '021 652 3167', 'matthew@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$6700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Matthew Wilson', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Matthew Wilson', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Matthew Wilson', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6482</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 fw-bold text-dark">Amelia Anderson</td>
-                                <td class="fs-13 text-muted">021 294 2545</td>
-                                <td class="fs-13 text-muted">11/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$2700</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Completed</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6482', 'AIA Life', 'Amelia', 'Anderson', '04/11/1988', '021 294 2545', 'amelia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '11/08/2026', '$2700', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6482', 'AIA Life', 'Amelia', 'Anderson', '04/11/1988', '021 294 2545', 'amelia@example.com', '12 Main St', 'Central', 'Auckland', '1010', '11/08/2026', '$2700', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Amelia Anderson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Amelia Anderson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Amelia Anderson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-5128</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 fw-bold text-dark">David Thomas</td>
-                                <td class="fs-13 text-muted">021 984 1887</td>
-                                <td class="fs-13 text-muted">05/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$5700</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-success text-success fs-11"><i class="feather-check me-1"></i>Yes</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-5128', 'Asteron Life', 'David', 'Thomas', '22/11/1995', '021 984 1887', 'david@example.com', '12 Main St', 'Central', 'Auckland', '1010', '05/08/2026', '$5700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-5128', 'Asteron Life', 'David', 'Thomas', '22/11/1995', '021 984 1887', 'david@example.com', '12 Main St', 'Central', 'Auckland', '1010', '05/08/2026', '$5700', 'Pending documents check', 'Sushant Yadav', 'Yes', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('David Thomas', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('David Thomas', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('David Thomas', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-6731</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">Harper Taylor</td>
-                                <td class="fs-13 text-muted">021 919 2790</td>
-                                <td class="fs-13 text-muted">13/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$3100</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-6731', 'Partners Life', 'Harper', 'Taylor', '08/04/1981', '021 919 2790', 'harper@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$3100', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-6731', 'Partners Life', 'Harper', 'Taylor', '08/04/1981', '021 919 2790', 'harper@example.com', '12 Main St', 'Central', 'Auckland', '1010', '13/08/2026', '$3100', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Harper Taylor', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Harper Taylor', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Harper Taylor', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-12">POL-2026-7171</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 fw-bold text-dark">Andrew Moore</td>
-                                <td class="fs-13 text-muted">021 385 8579</td>
-                                <td class="fs-13 text-muted">05/08/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$8200</td>
-                                <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Pending</span></td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewLoginClientDetails('POL-2026-7171', 'Partners Life', 'Andrew', 'Moore', '08/02/1989', '021 385 8579', 'andrew@example.com', '12 Main St', 'Central', 'Auckland', '1010', '05/08/2026', '$8200', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="editLoginClientDetails('POL-2026-7171', 'Partners Life', 'Andrew', 'Moore', '08/02/1989', '021 385 8579', 'andrew@example.com', '12 Main St', 'Central', 'Auckland', '1010', '05/08/2026', '$8200', 'Pending documents check', 'Sushant Yadav', 'Pending', 'Royson Pinto')"><i class="feather-edit text-success me-1"></i> Edit Client</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Andrew Moore', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Andrew Moore', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Andrew Moore', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-</tbody>
+                        </tbody>
                     </table>
                 </div>
             
 
-<!-- Modal: Client Request Popup -->
-    <div class="modal fade" id="clientRequestModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
-                    <h5 class="modal-title text-white mb-0"><i class="feather-git-pull-request me-2"></i> Client Service Request - <span id="reqClientNameHeader"></span></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="clientRequestForm" onsubmit="event.preventDefault(); handleSaveClientRequest();">
-                    <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
-                        
-                        <!-- SECTION 1: REQUEST OVERVIEW -->
-                        <div class="modal-section-card">
-                            <div class="modal-section-title">
-                                <i class="feather-calendar text-primary fs-15"></i> 1. Request Overview
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Date *</label>
-                                    <input type="date" class="form-control" id="reqDateInput" required>
-                                </div>
-                                <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <input type="text" class="form-control" id="reqClientNameInput" placeholder="Client Name" required>
-                                </div>
-                                <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <input type="text" class="form-control" id="reqCompanyInput" placeholder="Insurance Company" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: REQUEST TYPE & PROCESSING -->
-                        <div class="modal-section-card">
-                            <div class="modal-section-title">
-                                <i class="feather-layers text-primary fs-15"></i> 2. Service Request & Processing
-                            </div>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type *</label>
-                                    <select class="form-select" id="reqTypeSelect" required>
-                                        <option value="LOA">LOA</option>
-                                        <option value="Update Address">Update Address</option>
-                                        <option value="Put the premium on hold">Put the premium on hold</option>
-                                        <option value="LOA / Change of Adviser">LOA / Change of Adviser</option>
-                                        <option value="Correctify Name">Correctify Name</option>
-                                        <option value="Premium Deduction of 1 month">Premium Deduction of 1 month</option>
-                                        <option value="Birth Certificate to add name inbuilt cover">Birth Certificate to add name inbuilt cover</option>
-                                        <option value="Update Payment Details - DD">Update Payment Details - DD</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row g-3">
-                                <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Process Status</label>
-                                    <select class="form-select" id="reqProcessSelect">
-                                        <option value="Logged">Logged</option>
-                                        <option value="In Processing">In Processing</option>
-                                        <option value="Submitted to Insurer">Submitted to Insurer</option>
-                                        <option value="Pending Information">Pending Information</option>
-                                        <option value="Completed">Completed</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Process by *</label>
-                                    <select class="form-select" id="reqProcessBySelect" required>
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
-                                        <option value="Operations Team">Operations Team</option>
-                                        <option value="Compliance Officer">Compliance Officer</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 3: OUTCOME & COMPLETION -->
-                        <div class="modal-section-card mb-0">
-                            <div class="modal-section-title">
-                                <i class="feather-check-circle text-primary fs-15"></i> 3. Outcome & Completion Details
-                            </div>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Results / Outcome</label>
-                                    <textarea class="form-control" id="reqOutcomeInput" rows="2" placeholder="e.g. Address updated with AIA portal successfully."></textarea>
-                                </div>
-                                <div class="col-md-6 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Comments</label>
-                                    <textarea class="form-control" id="reqCommentsInput" rows="2" placeholder="Internal notes or adviser instructions..."></textarea>
-                                </div>
-                            </div>
-
-                            <div class="row g-3">
-                                <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Finished Day (Date)</label>
-                                    <input type="date" class="form-control" id="reqFinishedDateInput">
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold"><i class="feather-save me-1"></i> Save Client Request</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+@include('pages.clients.partials.client-request-modal')
 
     
     <!-- Modal: Claim Update Popup -->
@@ -863,7 +112,9 @@
                     <h5 class="modal-title text-white mb-0"><i class="feather-shield me-2"></i> <span id="claimModalTitle">New Claim Update</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="lodgeClaimForm" onsubmit="event.preventDefault(); handleAddNewClaim();">
+                <form id="lodgeClaimForm" method="POST" action="" onsubmit="return true;">
+                    @csrf
+                    <input type="hidden" id="claimClientId">
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -871,37 +122,28 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="claimClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimClientNameDisplay" name="client_name" placeholder="Client Name" required>
+                                </div>
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company</label>
+                                    <select class="form-select" id="claimCompanyDisplay" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <select class="form-select" id="claimCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description) <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimTypeInput" name="claim_type" placeholder="e.g. Medical Surgery / Trauma" required maxlength="100">
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description) *</label>
-                                    <input type="text" class="form-control" id="claimTypeInput" placeholder="e.g. Medical Surgery / Trauma" required>
-                                </div>
-                                <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Claim Handler)</label>
-                                    <select class="form-select" id="claimAdminSelect">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="claimAdminSelect" name="claim_admin">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -914,11 +156,11 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Processed Date</label>
-                                    <input type="date" class="form-control" id="claimProcessedDateInput">
+                                    <input type="date" class="form-control" id="claimProcessedDateInput" name="claim_processed_date">
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Update (Status)</label>
-                                    <select class="form-select" id="claimUpdateSelect">
+                                    <select class="form-select" id="claimUpdateSelect" name="claim_update_status">
                                         <option value="Under Assessment">Under Assessment</option>
                                         <option value="Medical Review">Medical Review</option>
                                         <option value="Document Verification">Document Verification</option>
@@ -928,14 +170,14 @@
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Approved Date</label>
-                                    <input type="date" class="form-control" id="claimApprovedDateInput">
+                                    <input type="date" class="form-control" id="claimApprovedDateInput" name="claim_approved_date">
                                 </div>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Result / Outcome</label>
-                                    <input type="text" class="form-control" id="claimOutcomeInput" placeholder="e.g. Approved / Paid $18,500">
+                                    <input type="text" class="form-control" id="claimOutcomeInput" name="claim_result" placeholder="e.g. Approved / Paid $18,500" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -943,6 +185,130 @@
                     <div class="modal-footer bg-light">
                         <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">Save Claim Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Mark as Inactive Confirmation -->
+    <div class="modal fade" id="addInactiveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: #0A192F;">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-user-x me-2"></i> Mark Client as Inactive</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addInactiveForm" method="POST" action="">
+                    @csrf
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3 text-secondary" style="font-size: 3rem;">
+                            <i class="feather-alert-circle"></i>
+                        </div>
+                        <h4 class="mb-3 text-dark fw-bold">Are you sure?</h4>
+                        <p class="text-muted fs-14">
+                            You are about to move <strong id="inactiveClientNameDisplay"></strong> to the Inactive Clients directory.
+                        </p>
+                    </div>
+                    <div class="modal-footer bg-light justify-content-center">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn px-4 fw-bold text-white" style="background-color: #00A8B5; border-color: #00A8B5;" onmouseover="this.style.backgroundColor='#008C97'" onmouseout="this.style.backgroundColor='#00A8B5'">Update Inactive Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: NPW Deferred Popup -->
+    <div class="modal fade" id="addNpwModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-clock me-2"></i> <span id="npwModalTitle">NPW Deferred</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addNpwForm" method="POST" action="" onsubmit="return true;">
+                    @csrf
+                    <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+                        <div class="modal-section-card">
+                            <div class="modal-section-title">
+                                <i class="feather-user text-primary fs-15"></i> 1. Client & Insurance Provider
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="npwClientNameDisplay" name="client_name" placeholder="Client Name" required>
+                                </div>
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company</label>
+                                    <select class="form-select" id="npwCompanyDisplay" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-section-card">
+                            <div class="modal-section-title">
+                                <i class="feather-file-text text-primary fs-15"></i> 2. Policy & Admin Details
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Issue Date <span class="text-danger"></span></label>
+                                    <input type="date" class="form-control" id="npwIssueDateInput" name="npw_issue_date" >
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Premium <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="npwPremiumInput" name="npw_premium" placeholder="e.g. 150.00" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Premium Mode</label>
+                                    <select class="form-select" id="npwPremiumModeSelect" name="npw_premium_mode">
+                                        <option value="" disabled selected>Select Premium Mode</option>
+                                        <option value="Weekly">Weekly</option>
+                                        <option value="Fortnightly">Fortnightly</option>
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Annually">Annually</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="npwAdminSelect" name="npw_admin">
+                                        <option value="" disabled selected>Select Advisor</option>
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Pending</label>
+                                    <select class="form-select" id="npwPendingSelect" name="npw_pending">
+                                        <option value="" disabled selected>Select Pending</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-section-card mb-0">
+                            <div class="modal-section-title">
+                                <i class="feather-message-square text-primary fs-15"></i> 3. Notes & Comments
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Notes/Comments</label>
+                                    <textarea class="form-control" id="npwNotesCommentsInput" name="npw_comments" rows="3" placeholder="Enter notes or explanation for deferral..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">Save NPW Record</button>
                     </div>
                 </form>
             </div>
@@ -957,7 +323,8 @@
                     <h5 class="modal-title text-white mb-0"><i class="feather-file-minus me-2"></i> <span id="cancModalTitle">New Cancellation Update</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addCancellationForm" onsubmit="event.preventDefault(); handleAddNewCancellation();">
+                <form id="addCancellationForm" method="POST" action="" onsubmit="return true;">
+                    @csrf
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -965,26 +332,16 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="cancClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cancClientNameDisplay" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Company *</label>
-                                    <select class="form-select" id="cancCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company</label>
+                                    <select class="form-select" id="cancCompanyDisplay" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -997,17 +354,18 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Cancellation Sent</label>
-                                    <input type="date" class="form-control" id="cancDateSentInput">
+                                    <input type="date" class="form-control" id="cancDateSentInput" name="canc_date_sent">
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Completed</label>
-                                    <input type="text" class="form-control" id="cancCompletedInput" placeholder="e.g. 15/08/2026 or Pending">
+                                    <input type="date" class="form-control" id="cancCompletedInput" name="canc_completed_date">
                                 </div>
                                 <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Handler)</label>
-                                    <select class="form-select" id="cancAdminSelect">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="cancAdminSelect" name="canc_admin">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -1015,7 +373,7 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Outcome</label>
-                                    <input type="text" class="form-control" id="cancOutcomeInput" placeholder="e.g. Cancelled - Premium Cost Concerns">
+                                    <input type="text" class="form-control" id="cancOutcomeInput" name="canc_outcome" placeholder="e.g. Cancelled - Premium Cost Concerns" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -1027,7 +385,7 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Comments</label>
-                                    <textarea class="form-control" id="cancCommentsInput" rows="3" placeholder="Enter comments or cancellation reason..."></textarea>
+                                    <textarea class="form-control" id="cancCommentsInput" name="canc_comments" rows="3" placeholder="Enter comments or cancellation reason..." maxlength="1000"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1181,69 +539,148 @@
     </div>
 
     <!-- Modal: Import Clients -->
-    <div class="modal fade" id="importLoginClientsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal fade" id="importLoginClientsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-fullscreen" id="importModalDialog">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
                     <h5 class="modal-title text-white mb-0"><i class="feather-upload me-2"></i> Import Login Clients</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="importForm" onsubmit="event.preventDefault(); handleImportClients();">
-                    <div class="modal-body p-4">
+                <form id="importForm" action="{{ route('import.upload') }}" method="POST" enctype="multipart/form-data" onsubmit="event.preventDefault(); handleImportStepUpload();">
+                    @csrf
+                    <input type="hidden" name="destination" value="login_client" id="importDestination">
+                    <input type="hidden" id="tempFilePath" value="">
+                    <input type="hidden" name="sheet_index" id="importSheetIndex" value="0">
+                    
+                    <div class="modal-body p-4" id="importStep1">
                         <div class="mb-4">
-                            <label class="form-label fw-semibold fs-13 text-dark mb-2">Upload Excel or CSV File *</label>
-                            <div class="drag-drop-box" onclick="document.getElementById('importFileInput').click();">
+                            <label class="form-label fw-semibold fs-13 text-dark mb-2">Upload Excel or CSV File <span class="text-danger">*</span></label>
+                            <div class="drag-drop-box" onclick="document.getElementById('importFileInput').click();"
+                                ondragover="event.preventDefault(); event.stopPropagation(); this.classList.add('drag-over');"
+                                ondragleave="event.preventDefault(); event.stopPropagation(); this.classList.remove('drag-over');"
+                                ondrop="event.preventDefault(); event.stopPropagation(); this.classList.remove('drag-over'); const fileInput = document.getElementById('importFileInput'); if (event.dataTransfer.files.length) { fileInput.files = event.dataTransfer.files; fileInput.dispatchEvent(new Event('change', { bubbles: true })); }">
                                 <i class="feather-file-text fs-1 text-primary mb-2"></i>
                                 <h6 class="fw-bold text-dark mb-1">Click to browse or drag & drop file here</h6>
                                 <p class="text-muted fs-12 mb-0">Supports .CSV, .XLS, or .XLSX spreadsheets</p>
-                                <input type="file" id="importFileInput" accept=".csv, .xls, .xlsx" style="display: none;" onchange="if(this.files[0]) $('#fileNameDisplay').text('Selected: ' + this.files[0].name);">
+                                <input type="file" id="importFileInput" name="import_file" accept=".csv, .xls, .xlsx" style="display: none;" onchange="if(this.files[0]) { $('#fileNameDisplay').text('Selected: ' + this.files[0].name).removeClass('text-danger'); document.getElementById('importClientsUploadButton').disabled = false; }">
                             </div>
                             <div id="fileNameDisplay" class="fs-12 fw-bold text-primary mt-2"></div>
+                            <div id="importSheetSelector" class="mt-3 d-none">
+                                <label for="importSheetSelect" class="form-label fw-semibold fs-13 text-dark">Worksheet</label>
+                                <select id="importSheetSelect" class="form-select form-select-sm"></select>
+                            </div>
                         </div>
-
+                        
                         <div class="bg-light p-3 rounded-3 mb-3 border">
                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="fw-bold fs-13 text-dark"><i class="feather-info me-1 text-info"></i> Standard Column Mapping Header</span>
-                                <a href="javascript:void(0);" onclick="alert('Sample template CSV downloaded!');" class="fs-12 text-primary text-decoration-none fw-semibold"><i class="feather-download me-1"></i> Download CSV Template</a>
+                                <span class="fw-bold fs-13 text-dark"><i class="feather-info me-1 text-info"></i> Column Mapping Support</span>
+                                <a href="#" onclick="downloadLoginClientsTemplate(event);" class="fs-12 text-primary text-decoration-none fw-semibold"><i class="feather-download me-1"></i> Download CSV Template</a>
                             </div>
-                            <p class="fs-12 text-muted mb-0">Ensure your spreadsheet header contains matching columns: <code>Policy No, Company, First Name, Last Name, DOB, Mobile, Email, Address, Suburb, City, Post Code, Login Date, ANP, Outcome, Adviser, Not Counting, Compliance by, RoA Due on, Status, Sent to Client</code>.</p>
+                            <p class="fs-12 text-muted mb-0">You can upload a file with any column names. In the next step, you will be able to map your columns to the database fields.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-body p-4 d-none" id="importStep2">
+                        <h6 class="fw-bold text-dark mb-3">Map Columns <span id="selectedSheetName" class="text-muted fs-13 fw-normal"></span></h6>
+                        <p class="text-muted fs-13 mb-3">Please map the columns from your uploaded file to the corresponding database fields. Required fields are marked with an asterisk (*).</p>
+                        
+                        <div class="table-responsive mapping-scroll-region" role="region" aria-label="Column mapping" tabindex="0" style="height: min(55vh, 400px); max-width: 100%; overflow: auto; overscroll-behavior: contain;">
+                            <table class="table table-bordered table-sm align-middle fs-13 mapping-table" style="min-width: 640px; table-layout: fixed;">
+                                <thead class="bg-light sticky-top">
+                                    <tr>
+                                        <th style="width: 50%;">Your File Column</th>
+                                        <th style="width: 50%;">Map to Field</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="modal-body p-4 d-none" id="importStep3">
+                        <h6 class="fw-bold text-dark mb-3">Data Preview</h6>
+                        <p class="text-muted fs-13 mb-3">Please review the first few rows of your mapped data before processing.</p>
+                        
+                        <div class="table-responsive mapping-scroll-region" style="max-height: 400px !important; overflow-y: auto;">
+                            <table class="table table-bordered table-sm align-middle fs-12 text-nowrap preview-table">
+                                <thead class="bg-light sticky-top">
+                                    <!-- Populated by JS -->
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
                         </div>
 
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="overwriteExistingCheck" checked>
-                                <label class="form-check-label fs-13 text-dark" for="overwriteExistingCheck">
-                                    Update existing client if Policy No. matches
-                                </label>
+                        <div class="d-flex align-items-center justify-content-between mt-2" id="importPreviewPagination">
+                            <span class="fs-12 text-muted" id="importPreviewPageSummary"></span>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Preview pages">
+                                <button type="button" class="btn btn-outline-secondary" id="importPreviewPreviousButton" onclick="handleImportStepPreview(Math.max(0, currentPreviewOffset - currentPreviewLimit))" disabled>Previous</button>
+                                <button type="button" class="btn btn-outline-secondary" id="importPreviewNextButton" onclick="handleImportStepPreview(currentPreviewOffset + currentPreviewLimit)" disabled>Next</button>
                             </div>
+                        </div>
+                        
+                        <div class="mt-3 d-flex align-items-center gap-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="skipErrorsCheck" checked>
                                 <label class="form-check-label fs-13 text-dark" for="skipErrorsCheck">
-                                    Skip rows with missing required values
+                                    Skip rows with errors and import valid data
                                 </label>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light">
+                    
+                    <div class="modal-footer bg-light d-flex justify-content-between" id="importFooterStep1">
                         <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="feather-upload me-1"></i> Upload & Import Records</button>
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold" id="importClientsUploadButton" disabled>Continue to Mapping <i class="feather-arrow-right ms-1"></i></button>
+                    </div>
+                    <div class="modal-footer bg-light d-flex justify-content-between d-none" id="importFooterStep2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showImportStep(1)"><i class="feather-arrow-left me-1"></i> Back</button>
+                        <button type="button" class="btn btn-primary btn-sm fw-bold" id="importClientsPreviewButton" onclick="handleImportStepPreview()">Generate Preview <i class="feather-arrow-right ms-1"></i></button>
+                    </div>
+                    <div class="modal-footer bg-light d-flex justify-content-between d-none" id="importFooterStep3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showImportStep(2)"><i class="feather-arrow-left me-1"></i> Back</button>
+                        <button type="button" class="btn btn-success btn-sm fw-bold" id="importClientsProcessButton" onclick="handleImportStepProcess()"><i class="feather-check-circle me-1"></i> Confirm & Import</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Add New Login Client (Organized Sections) -->
-    <div class="modal fade" id="addLoginClientModal" tabindex="-1" aria-hidden="true">
+    <!-- Modal: Import Results Summary -->
+    <div class="modal fade" id="importResultsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--color-success);">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-check-circle me-2"></i> Import Completed</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="importResultsSummary" class="mb-4"></div>
+                    
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add New Login Client -->
+    <div class="modal fade" id="addLoginClientModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-xl" id="addClientModalDialog">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
                     <h5 class="modal-title text-white mb-0"><i class="feather-user-plus me-2"></i> <span id="loginModalTitle">Add New Login Client Entry</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addLoginClientForm" onsubmit="event.preventDefault(); handleAddNewLoginClient();">
+                <form id="addLoginClientForm" method="POST" action="{{ route('clients.login.store') }}" data-create-action="{{ route('clients.login.store') }}">
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
-                        
+                        @csrf
+                        <input type="hidden" name="_method" id="loginFormMethod" value="POST">
+                        <input type="hidden" name="client_id" id="loginClientId" value="">
                         <!-- SECTION 1: POLICY & PROVIDER INFO -->
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -1252,25 +689,24 @@
                             <div class="row g-3">
                                 <div class="col-md-3 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Policy No.</label>
-                                    <input type="text" class="form-control" id="loginPolicyNoInput" placeholder="e.g. POL-2026-9912">
+                                    <input type="text" class="form-control" id="loginPolicyNoInput" name="policy_no" placeholder="e.g. POL-2026-9912" maxlength="30">
                                 </div>
                                 <div class="col-md-3 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <select class="form-select" id="loginCompanyInput">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company</label>
+                                    <select class="form-select" id="loginCompanyInput" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Login Date</label>
-                                    <input type="date" class="form-control" id="loginDateInput">
+                                    <input type="date" class="form-control" id="loginDateInput" name="login_date">
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">ANP ($)</label>
-                                    <input type="number" class="form-control" id="loginAnpInput" placeholder="2500">
+                                    <input type="number" step="0.01" class="form-control" id="loginAnpInput" name="anp" placeholder="2500.00">
                                 </div>
                             </div>
                         </div>
@@ -1282,24 +718,24 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">First Name *</label>
-                                    <input type="text" class="form-control" id="loginFirstNameInput" placeholder="e.g. Rahul" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">First Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="loginFirstNameInput" name="first_name" placeholder="e.g. Rahul" maxlength="50" required>
                                 </div>
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Last Name *</label>
-                                    <input type="text" class="form-control" id="loginLastNameInput" placeholder="e.g. Sharma" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Last Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="loginLastNameInput" name="last_name" placeholder="e.g. Sharma" maxlength="50" required>
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Date of Birth</label>
-                                    <input type="date" class="form-control" id="loginDobInput">
+                                    <input type="date" class="form-control" id="loginDobInput" name="dob">
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Mobile Number *</label>
-                                    <input type="text" class="form-control" id="loginMobileInput" placeholder="021 XXX XXXX" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Mobile Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="loginMobileInput" name="phone" placeholder="021 XXX XXXX" maxlength="15" required>
                                 </div>
                                 <div class="col-md-6 col-sm-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Email Address</label>
-                                    <input type="email" class="form-control" id="loginEmailInput" placeholder="client@example.com">
+                                    <input type="email" class="form-control" id="loginEmailInput" name="email" placeholder="client@example.com" maxlength="100">
                                 </div>
                             </div>
                         </div>
@@ -1312,19 +748,19 @@
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Street Address</label>
-                                    <input type="text" class="form-control" id="loginAddressInput" placeholder="e.g. 42 Queen Street">
+                                    <input type="text" class="form-control" id="loginAddressInput" name="address" placeholder="e.g. 42 Queen Street" maxlength="150">
                                 </div>
                                 <div class="col-md-2 col-sm-4">
                                     <label class="form-label fw-semibold fs-13 text-dark">Suburb</label>
-                                    <input type="text" class="form-control" id="loginSuburbInput" placeholder="e.g. Central">
+                                    <input type="text" class="form-control" id="loginSuburbInput" name="suburb" placeholder="e.g. Central" maxlength="50">
                                 </div>
                                 <div class="col-md-2 col-sm-4">
                                     <label class="form-label fw-semibold fs-13 text-dark">City</label>
-                                    <input type="text" class="form-control" id="loginCityInput" placeholder="e.g. Auckland">
+                                    <input type="text" class="form-control" id="loginCityInput" name="city" placeholder="e.g. Auckland" maxlength="50">
                                 </div>
                                 <div class="col-md-2 col-sm-4">
                                     <label class="form-label fw-semibold fs-13 text-dark">Post Code</label>
-                                    <input type="text" class="form-control" id="loginPostCodeInput" placeholder="1010">
+                                    <input type="text" class="form-control" id="loginPostCodeInput" name="post_code" placeholder="1010" maxlength="10">
                                 </div>
                             </div>
                         </div>
@@ -1336,42 +772,47 @@
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-3 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Adviser</label>
-                                    <select class="form-select" id="loginAdviserInput">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="loginAdviserInput" name="adviser">
+                                        <option value="" disabled {{ in_array(auth()->user()->name, $advisers->toArray()) ? '' : 'selected' }}>Select Advisor</option>
+                                        @foreach($advisers as $advisorName)
+                                             <option value="{{ $advisorName }}" {{ auth()->user()->name === $advisorName ? 'selected' : '' }}>{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Not Counting</label>
-                                    <select class="form-select" id="loginNotCountingSelect">
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
+                                    <select class="form-select" id="loginNotCountingSelect" name="not_counting">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Compliance by</label>
-                                    <input type="text" class="form-control" id="loginComplianceByInput" placeholder="Officer Name">
+                                    <input type="text" class="form-control" id="loginComplianceByInput" name="compliance_by" placeholder="Officer Name" maxlength="50">
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">RoA Due on</label>
-                                    <input type="date" class="form-control" id="loginRoaDueDateInput">
+                                    <input type="date" class="form-control" id="loginRoaDueDateInput" name="roa_due_date">
                                 </div>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Status - Sent to Compliance</label>
-                                    <select class="form-select" id="loginStatusComplianceSelect">
+                                    <select class="form-select" id="loginStatusComplianceSelect" name="status_compliance">
+                                        <option value="" disabled selected>Select Status</option>
                                         <option value="Sent to Compliance">Sent to Compliance</option>
                                         <option value="In Review">In Review</option>
                                         <option value="Approved">Approved</option>
-                                        <option value="Completed">Completed</option>
+                                        
                                     </select>
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Sent to Client</label>
-                                    <select class="form-select" id="loginSentToClientSelect">
+                                    <select class="form-select" id="loginSentToClientSelect" name="sent_to_client">
+                                        <option value="" disabled selected>Select Status</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Yes">Yes</option>
                                         <option value="No">No</option>
@@ -1379,7 +820,7 @@
                                 </div>
                                 <div class="col-md-4 col-sm-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Outcome / Pending Requirements</label>
-                                    <input type="text" class="form-control" id="loginOutcomeInput" placeholder="e.g. Pending Medical Test">
+                                    <input type="text" class="form-control" id="loginOutcomeInput" name="outcome" placeholder="e.g. Pending Medical Test" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -1399,10 +840,30 @@
     
         </div>
     </div>
-
 @push('scripts')
-    <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/clients-login.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/clients-login.js') }}?v={{ filemtime(public_path('assets/js/pages/clients-login.js')) }}"></script>
+@endpush
+
+@push('styles')
+    <style>
+        .drag-drop-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 22px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .drag-drop-box.drag-over {
+            border-color: #00a8b5;
+            background-color: rgba(0, 168, 181, 0.08);
+        }
+    </style>
 @endpush
 
 @endsection
+
+
+
+

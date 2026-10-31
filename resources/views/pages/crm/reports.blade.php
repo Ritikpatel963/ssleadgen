@@ -7,9 +7,6 @@
                     <p class="text-muted fs-13 mb-0">Export performance metrics by advisor, channel, and quote
                         conversion rates.</p>
                 </div>
-                <button class="btn btn-outline-primary btn-sm px-3 fw-bold"
-                    onclick="alert('Exporting Report PDF...')"><i class="feather-download me-1"></i> Export PDF
-                    Report</button>
             </div>
 
             <!-- Report Filters Card -->
@@ -20,24 +17,25 @@
                         <div class="dash-filter-input-group">
                             <i class="feather-calendar"></i>
                             <input type="text" class="form-control dash-filter-input fs-13" id="reportDateRange"
-                                placeholder="01 Jan 2026 – 18 Aug 2026" value="01 Jan 2026 - 18 Aug 2026" />
+                                placeholder="Select Date Range" />
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fs-12 fw-semibold text-muted mb-1">Lead Source</label>
                         <select class="form-select fs-13" id="reportSourceSelect">
                             <option value="">All Sources</option>
-                            <option value="Web Form">Web Form</option>
-                            <option value="Referral">Referral</option>
-                            <option value="LinkedIn Ads">LinkedIn Ads</option>
+                            @foreach($sources as $source)
+                            <option value="{{ $source->id }}">{{ $source->name }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fs-12 fw-semibold text-muted mb-1">Assigned Advisor</label>
+                        <label class="form-label fs-12 fw-semibold text-muted mb-1">Advisor-wise Filter</label>
                         <select class="form-select fs-13" id="reportAdvisorSelect">
                             <option value="">All Advisors</option>
-                            <option value="Sushant Yadav">Sushant Yadav</option>
-                            <option value="Priya Patel">Priya Patel</option>
+                            @foreach($advisors as $advisor)
+                            <option value="{{ $advisor->id }}">{{ $advisor->name }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-3 d-flex align-items-end" style="height: 62px;">
@@ -47,16 +45,32 @@
                 </div>
             </div>
 
-            <!-- Report Charts Row -->
-            <div class="row g-4">
+            <!-- New Charts Row -->
+            <div class="row g-4 mb-4">
                 <div class="col-lg-6">
-                    <div class="card-widget p-4">
-                        <h6 class="widget-title mb-3">Leads Captured by Source</h6>
+                    <div class="card-widget p-4 h-100">
+                        <h6 class="widget-title mb-3">Client Status Distribution</h6>
+                        <div id="reportStatusDonutChart" class="d-flex justify-content-center" style="min-height: 260px;"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card-widget p-4 h-100">
+                        <h6 class="widget-title mb-3">Pipeline Snapshot</h6>
+                        <div id="reportPipelineBarChart" style="min-height: 260px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Charts Row -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card-widget p-4 h-100">
+                        <h6 class="widget-title mb-3">Clients Generated Over Time</h6>
                         <div id="reportSourceBarChart" style="min-height: 260px;"></div>
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    <div class="card-widget p-4">
+                    <div class="card-widget p-4 h-100">
                         <h6 class="widget-title mb-3">Advisor Conversion Funnel</h6>
                         <div id="reportFunnelAreaChart" style="min-height: 260px;"></div>
                     </div>
@@ -66,7 +80,7 @@
             <!-- Report DataTables -->
             <div class="card-widget">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="widget-title mb-0">Advisor Performance Breakdown</h6>
+                    <h6 class="widget-title mb-0">Advisor-wise Performance Breakdown</h6>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle w-100" id="repPerformanceTable">
@@ -74,26 +88,12 @@
                             <tr class="fs-12 text-muted text-uppercase fw-semibold" style="background: #F8FAFC;">
                                 <th>Advisor Name</th>
                                 <th>Inforce Clients</th>
-                                <th>Claim Update</th>
                                 <th>Conversion Rate</th>
                                 <th>Annual Premium Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Sushant Yadav</td>
-                                <td class="fs-13">142</td>
-                                <td class="fs-13">110</td>
-                                <td class="fs-13 fw-bold text-success">55.1%</td>
-                                <td class="fs-13 fw-bold text-success">$1,420,000</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Priya Patel</td>
-                                <td class="fs-13">98</td>
-                                <td class="fs-13">75</td>
-                                <td class="fs-13 fw-bold text-success">55.1%</td>
-                                <td class="fs-13 fw-bold text-success">$890,000</td>
-                            </tr>
+                            <!-- Data will be populated via AJAX -->
                         </tbody>
                     </table>
                 </div>
@@ -103,8 +103,7 @@
     </div>
 
 @push('scripts')
-    <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/reports-leads.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/reports-leads.js?v=' . filemtime(public_path('assets/js/pages/reports-leads.js'))) }}"></script>
 @endpush
 
 @endsection

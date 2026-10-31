@@ -15,7 +15,25 @@ class Lead extends Model
         'lead_source_id',
         'status',
         'user_id',
+        'notes',
+        'policy_no',
+        'company',
+        'login_date',
+        'anp',
+        'dob',
+        'address',
+        'suburb',
+        'city',
+        'post_code',
+        'adviser',
+        'not_counting',
+        'compliance_by',
+        'roa_due_date',
+        'status_compliance',
+        'sent_to_client',
+        'outcome',
     ];
+    
 
     public function leadSource()
     {

@@ -21,6 +21,18 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Queue Worker
+
+Client imports run as resumable row-range jobs on Laravel's database queue. Each job commits a bounded 100-row range and atomically stores the next source-row cursor with its successor job. Keep a worker running in production under a process supervisor:
+
+```bash
+php artisan queue:work database --queue=default --timeout=45 --tries=3 --sleep=1
+```
+
+`DB_QUEUE_RETRY_AFTER` must be greater than the worker timeout; the default is 90 seconds. On shared hosting, run the worker from a cron entry at least once per minute with `--stop-when-empty`; if the host kills a worker, its committed row ranges remain complete and the next queue attempt resumes at the saved cursor. Monitor failed jobs with `php artisan queue:failed`.
+
+The scheduler removes completed import results after 30 days and abandoned uploads after one day. Keep Laravel's scheduler running in production (`php artisan schedule:work`, or configure the platform's standard `schedule:run` cron entry) so this cleanup runs.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.

@@ -6,21 +6,21 @@
                 <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3 flex-wrap flex-fill">
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search (First, Last Name)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterClientSearch" class="form-control dash-filter-input" placeholder="Search by client name" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Number Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Mobile Number</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
-                                <input type="text" id="filterNumberSearch" class="form-control dash-filter-input" placeholder="Search by phone number" />
+                                <input type="text" id="filterNumberSearch" class="form-control dash-filter-input" placeholder="Search by mobile number" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address (Street Address, Pin code, City, Suburb)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterAddressSearch" class="form-control dash-filter-input" placeholder="Search by address" />
@@ -30,7 +30,7 @@
                             <label class="fs-11 fw-bold text-muted mb-1 d-block">Date of Birth Search</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-calendar"></i>
-                                <input type="text" id="filterDobSearch" class="form-control dash-filter-input" placeholder="DD / MM / YYYY" />
+                                <input type="date" id="filterDobSearch" class="form-control dash-filter-input" />
                             </div>
                         </div>
                         <div style="min-width: 210px;" class="flex-fill">
@@ -165,7 +165,7 @@
                                 <div class="avatar-text bg-soft-success text-success rounded-circle flex-shrink-0"><i class="feather-shield-check"></i></div>
                                 <div class="flex-fill">
                                     <div class="fw-bold text-dark fs-13">Policy issued</div>
-                                    <div class="text-muted fs-12">AIA Life - $1,000,000</div>
+                                    <div class="text-muted fs-12">AIA Health - $1,000,000</div>
                                 </div>
                                 <div class="text-muted fs-11 flex-shrink-0">18 Aug 2026, 09:30 AM</div>
                             </div>
@@ -243,7 +243,6 @@
                                                 <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                                 <div class="action-kebab-dropdown">
                                                     <a href="clients.html" class="action-kebab-item"><i class="feather-eye text-primary me-1"></i> View Client Profile</a>
-                                                    <a href="policies.html" class="action-kebab-item"><i class="feather-file-text me-1"></i> View Policies</a>
                                                 </div>
                                             </div>
                                         </td>
@@ -259,7 +258,6 @@
                                                 <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                                 <div class="action-kebab-dropdown">
                                                     <a href="clients.html" class="action-kebab-item"><i class="feather-eye text-primary me-1"></i> View Client Profile</a>
-                                                    <a href="policies.html" class="action-kebab-item"><i class="feather-file-text me-1"></i> View Policies</a>
                                                 </div>
                                             </div>
                                         </td>
@@ -275,7 +273,7 @@
                                                 <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                                 <div class="action-kebab-dropdown">
                                                     <a href="clients.html" class="action-kebab-item"><i class="feather-eye text-primary me-1"></i> View Client Profile</a>
-                                                    <a href="policies.html" class="action-kebab-item"><i class="feather-file-text me-1"></i> View Policies</a>
+                                                    
                                                 </div>
                                             </div>
                                         </td>
@@ -291,7 +289,7 @@
                                                 <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                                 <div class="action-kebab-dropdown">
                                                     <a href="clients.html" class="action-kebab-item"><i class="feather-eye text-primary me-1"></i> View Client Profile</a>
-                                                    <a href="policies.html" class="action-kebab-item"><i class="feather-file-text me-1"></i> View Policies</a>
+                                                   
                                                 </div>
                                             </div>
                                         </td>
@@ -332,7 +330,6 @@
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="fs-12 text-muted fw-semibold">18 Aug 2026</span>
-                                    <i class="feather-phone text-muted fs-13"></i>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center justify-content-between p-2 rounded hover-bg-light border-bottom">
@@ -342,7 +339,6 @@
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
                                     <span class="fs-12 text-muted fw-semibold">19 Aug 2026</span>
-                                    <i class="feather-phone text-muted fs-13"></i>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center justify-content-between p-2 rounded hover-bg-light border-bottom">
@@ -437,7 +433,7 @@
     </div>
 
 @push('scripts')
-    <script src="{{ asset('assets/js/dashboard-redesign.js?v=10.0') }}"></script>
+    <script src="{{ asset('assets/js/dashboard-redesign.js') }}?v={{ filemtime(public_path('assets/js/dashboard-redesign.js')) }}"></script>
 @endpush
 
 @endsection
