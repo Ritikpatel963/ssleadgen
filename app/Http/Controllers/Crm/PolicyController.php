@@ -12,7 +12,7 @@ class PolicyController extends Controller
 {
     public function index()
     {
-        $policies = Policy::with(['client', 'insurer'])->latest()->get();
+        $policies = Policy::with(['client', 'insurer'])->latest()->paginate(10)->withQueryString();
         $clients = Client::all();
         $insurers = Insurer::where('is_active', true)->get();
 

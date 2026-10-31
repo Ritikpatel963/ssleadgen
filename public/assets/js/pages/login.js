@@ -1,14 +1,20 @@
 /* Page script for login */
-function togglePasswordVisibility() {
-            const pwdInput = document.getElementById('passwordInput');
-            const toggleBtn = document.getElementById('togglePasswordBtn');
-            if (pwdInput.type === 'password') {
-                pwdInput.type = 'text';
-                toggleBtn.classList.remove('feather-eye');
-                toggleBtn.classList.add('feather-eye-off');
+document.addEventListener('DOMContentLoaded', function() {
+    const toggles = document.querySelectorAll('.password-toggle');
+    toggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const input = this.parentElement.querySelector('input');
+            const icon = this.querySelector('i') || this;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye', 'feather-eye');
+                icon.classList.add('fa-eye-slash', 'feather-eye-off');
             } else {
-                pwdInput.type = 'password';
-                toggleBtn.classList.remove('feather-eye-off');
-                toggleBtn.classList.add('feather-eye');
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash', 'feather-eye-off');
+                icon.classList.add('fa-eye', 'feather-eye');
             }
-        }
+        });
+    });
+});

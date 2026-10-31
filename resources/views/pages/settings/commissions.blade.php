@@ -83,7 +83,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-4109</td>
                                 <td class="fs-13">Suman Pappula</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-danger text-danger fs-11">Key Person Business</span></td>
                                 <td class="fs-13 fw-semibold">$2,250</td>
                                 <td><span class="badge bg-soft-success text-success fs-11">Initial Upfront</span></td>
@@ -93,7 +93,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-1349</td>
                                 <td class="fs-13">Rahul Sharma</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-warning text-warning fs-11">Income Protection</span></td>
                                 <td class="fs-13 fw-semibold">$3,495</td>
                                 <td><span class="badge bg-soft-success text-success fs-11">Initial Upfront</span></td>
@@ -103,7 +103,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-4362</td>
                                 <td class="fs-13">Priya Patel</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-info text-info fs-11">Trauma & Medical</span></td>
                                 <td class="fs-13 fw-semibold">$6,303</td>
                                 <td><span class="badge bg-soft-success text-success fs-11">Initial Upfront</span></td>
@@ -153,7 +153,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-2862</td>
                                 <td class="fs-13">Aarav Cooper</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-danger text-danger fs-11">Key Person Business</span></td>
                                 <td class="fs-13 fw-semibold">$5,172</td>
                                 <td><span class="badge bg-soft-purple text-purple fs-11">Renewal Trail</span></td>
@@ -183,7 +183,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-7984</td>
                                 <td class="fs-13">Olivia Patel</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-danger text-danger fs-11">Key Person Business</span></td>
                                 <td class="fs-13 fw-semibold">$7,335</td>
                                 <td><span class="badge bg-soft-purple text-purple fs-11">Renewal Trail</span></td>
@@ -253,7 +253,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-2099</td>
                                 <td class="fs-13">Sophia Miller</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-primary text-primary fs-11">Life & Cover</span></td>
                                 <td class="fs-13 fw-semibold">$2,263</td>
                                 <td><span class="badge bg-soft-purple text-purple fs-11">Renewal Trail</span></td>
@@ -333,7 +333,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-7566</td>
                                 <td class="fs-13">Amelia Anderson</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-info text-info fs-11">Trauma & Medical</span></td>
                                 <td class="fs-13 fw-semibold">$7,570</td>
                                 <td><span class="badge bg-soft-success text-success fs-11">Initial Upfront</span></td>
@@ -363,7 +363,7 @@
                             <tr>
                                 <td class="fw-bold text-dark fs-13">POL-2026-2391</td>
                                 <td class="fs-13">Andrew Moore</td>
-                                <td class="fs-13">AIA Life</td>
+                                <td class="fs-13">AIA Health</td>
                                 <td><span class="badge bg-soft-info text-info fs-11">Trauma & Medical</span></td>
                                 <td class="fs-13 fw-semibold">$2,789</td>
                                 <td><span class="badge bg-soft-success text-success fs-11">Initial Upfront</span></td>
@@ -379,7 +379,7 @@
 
 @push('scripts')
     <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/commissions.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/commissions.js') }}?v={{ filemtime(public_path('assets/js/pages/commissions.js')) }}"></script>
 @endpush
 
 @endsection

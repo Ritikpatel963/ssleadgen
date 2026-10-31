@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                    <h4 class="fw-bold text-dark mb-1">NPW Deferred Directory</h4>
+                    <h4 class="fw-bold text-dark mb-1">NPW Deferred Directory <span id="npwDeferredClientCount"></span></h4>
                     <p class="text-muted fs-13 mb-0">Manage and track NPW Deferred client status, policies details, and
                         adviser actions.</p>
                 </div>
@@ -15,7 +15,7 @@
                 <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3 flex-wrap flex-fill">
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search (First, Last Name)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterClientSearch" class="form-control dash-filter-input"
@@ -23,15 +23,15 @@
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Number Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Mobile Number</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterNumberSearch" class="form-control dash-filter-input"
-                                    placeholder="Search by phone number" />
+                                    placeholder="Search by mobile number" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address (Street Address, Pin code, City, Suburb)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterAddressSearch" class="form-control dash-filter-input"
@@ -42,8 +42,7 @@
                             <label class="fs-11 fw-bold text-muted mb-1 d-block">Date of Birth Search</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-calendar"></i>
-                                <input type="text" id="filterDobSearch" class="form-control dash-filter-input"
-                                    placeholder="DD / MM / YYYY" />
+                                <input type="date" id="filterDobSearch" class="form-control dash-filter-input" />
                             </div>
                         </div>
                     </div>
@@ -58,7 +57,7 @@
             <!-- Table Card -->
             <div class="card-widget">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle w-100" id="npwDeferredTable">
+                    <table class="table table-hover align-middle w-100" id="npwDeferredTable" data-server-paginated data-can-write="{{ auth()->user()->canWrite('clients_npw_deferred') ? '1' : '0' }}">
                         <thead>
                             <tr class="fs-12 text-muted text-uppercase fw-semibold" style="background: #F8FAFC;">
                                 <th>Client Name</th>
@@ -68,702 +67,81 @@
                                 <th>Issue Date</th>
                                 <th>Premium</th>
                                 <th>Admin</th>
-                                <th>Pending</th>
                                 <th>Comments</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($clients as $client)
                             <tr>
-                                <td class="fw-bold text-dark fs-13">Kishore Johnson</td>
-                                <td class="fs-13 text-muted">POL-2026-4571</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 271 2876</td>
-                                <td class="fs-13 text-muted">19/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$113.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
+                                <td class="fw-bold text-dark fs-13" data-order="{{ $client->id }}">{{ $client->first_name }} {{ $client->last_name }}</td>
+                                <td class="fs-13 text-muted">{{ $client->policy_no }}</td>
+                                <td class="fs-13 fw-semibold text-dark">{{ $client->company }}</td>
+                                <td class="fs-13 text-muted">{{ $client->phone }}</td>
+                                <td class="fs-13 text-muted">{{ $client->npw_issue_date ? $client->npw_issue_date->format('d/m/Y') : 'N/A' }}</td>
+                                <td class="fs-13 fw-bold text-dark">${{ number_format((float)($client->npw_premium ?: $client->anp), 2) }} <small class="text-muted">({{ $client->npw_premium_mode ?? 'Monthly' }})</small></td>
+                                <td class="fs-13 text-muted">{{ $client->npw_admin ?? 'N/A' }}</td>
+                                <td class="fs-13 text-muted">{{ Str::limit($client->npw_comments ?? 'No comments.', 50) }}</td>
                                 <td class="text-center">
-                                    <div class="action-kebab-wrapper">
+                                    <div class="action-kebab-wrapper"
+                                        data-client-id="{{ $client->id }}"
+                                        data-client-name="{{ $client->first_name }} {{ $client->last_name }}"
+                                        data-company="{{ $client->company }}"
+                                        data-policy-no="{{ $client->policy_no ?: ($client->policies->pluck('policy_number')->filter()->join(', ') ?: '-') }}"
+                                        data-first-name="{{ $client->first_name }}"
+                                        data-last-name="{{ $client->last_name }}"
+                                        data-dob="{{ $client->dob?->format('d/m/Y') }}"
+                                        data-phone="{{ $client->phone }}"
+                                        data-email="{{ $client->email }}"
+                                        data-address="{{ $client->address }}"
+                                        data-suburb="{{ $client->suburb }}"
+                                        data-city="{{ $client->city }}"
+                                        data-post-code="{{ $client->post_code }}"
+                                        data-login-date="{{ $client->login_date?->format('d/m/Y') }}"
+                                        data-anp="{{ $client->anp }}"
+                                        data-adviser="{{ $client->adviser }}"
+                                        data-not-counting="{{ $client->not_counting ? 'Yes' : 'No' }}"
+                                        data-compliance-by="{{ $client->compliance_by }}"
+                                        data-roa-due-date="{{ $client->roa_due_date?->format('d/m/Y') }}"
+                                        data-status-compliance="{{ $client->status_compliance }}"
+                                        data-sent-to-client="{{ $client->sent_to_client }}"
+                                        data-outcome="{{ $client->outcome }}"
+                                        data-claim-type="{{ $client->claim_type }}"
+                                        data-claim-admin="{{ $client->claim_admin ?: $client->adviser }}"
+                                        data-adviser="{{ $client->adviser }}"
+                                        data-claim-processed-date="{{ $client->claim_processed_date?->format('Y-m-d') }}"
+                                        data-claim-update-status="{{ $client->claim_update_status }}"
+                                        data-claim-approved-date="{{ $client->claim_approved_date?->format('Y-m-d') }}"
+                                        data-claim-result="{{ $client->claim_result }}"
+                                        data-canc-date-sent="{{ $client->canc_date_sent?->format('Y-m-d') }}"
+                                        data-canc-completed-date="{{ $client->canc_completed_date?->format('Y-m-d') }}"
+                                        data-canc-outcome="{{ $client->canc_outcome }}"
+                                        data-canc-comments="{{ $client->canc_comments }}"
+                                        data-canc-admin="{{ $client->canc_admin ?: $client->adviser }}"
+                                        data-npw-issue-date="{{ $client->npw_issue_date?->format('d/m/Y') }}"
+                                        data-npw-premium="{{ $client->npw_premium ?: $client->anp }}"
+                                        data-npw-premium-mode="{{ $client->npw_premium_mode }}"
+                                        data-npw-admin="{{ $client->npw_admin ?: $client->adviser }}"
+                                        data-npw-pending="{{ $client->npw_pending }}"
+                                        data-npw-notes-comments="{{ $client->notes }}"
+                                        data-npw-comments="{{ $client->npw_comments }}">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Kishore', 'Johnson', 'POL-2026-4571', 'Chubb Life', '23/05/1986', '021 271 2876', 'kishore.johnson@example.com', '109 Main Road', 'Sub3', 'Tauranga', '2771', '19/07/2026', '$113.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Kishore Johnson', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Kishore Johnson', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Kishore Johnson', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetailsFromRow(this.closest('.action-kebab-wrapper'))"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            @if(auth()->user()->canWrite('clients_npw_deferred'))
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="editNpwDeferredFromRow(this.closest('.action-kebab-wrapper'))"><i class="feather-edit text-info me-1"></i> Edit Record</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openNpwClientInforceModal('{{ addslashes($client->first_name . ' ' . $client->last_name) }}', '{{ addslashes($client->company ?? '') }}', {{ $client->id }})"><i class="feather-git-pull-request text-warning me-1"></i> Inforce Clients</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModalFromRow(this.closest('.action-kebab-wrapper'))"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openInactiveClientModal('{{ addslashes($client->first_name . ' ' . $client->last_name) }}', '{{ addslashes($client->company ?? '') }}', '{{ $client->id }}')"><i class="feather-user-x text-secondary me-1"></i> Inactive Clients</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openNpwCancellationModal(this.closest('.action-kebab-wrapper'))"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Suman Williams</td>
-                                <td class="fs-13 text-muted">POL-2026-7149</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 706 4978</td>
-                                <td class="fs-13 text-muted">12/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$372.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Suman', 'Williams', 'POL-2026-7149', 'Chubb Life', '23/04/1977', '021 706 4978', 'suman.williams@example.com', '23 Main Road', 'Sub5', 'Hamilton', '1672', '12/07/2026', '$372.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Suman Williams', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Suman Williams', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Suman Williams', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Rahul Brown</td>
-                                <td class="fs-13 text-muted">POL-2026-7071</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 112 7882</td>
-                                <td class="fs-13 text-muted">12/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$425.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Rahul', 'Brown', 'POL-2026-7071', 'AIA Life', '17/11/1985', '021 112 7882', 'rahul.brown@example.com', '115 Main Road', 'Sub8', 'Hamilton', '8102', '12/07/2026', '$425.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Rahul Brown', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Rahul Brown', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Rahul Brown', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Priya Jones</td>
-                                <td class="fs-13 text-muted">POL-2026-3506</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 766 5425</td>
-                                <td class="fs-13 text-muted">14/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$403.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Priya', 'Jones', 'POL-2026-3506', 'Chubb Life', '06/12/1991', '021 766 5425', 'priya.jones@example.com', '88 Main Road', 'Sub9', 'Napier', '8616', '14/07/2026', '$403.00', 'Quarterly', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Priya Jones', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Priya Jones', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Priya Jones', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Sarah Garcia</td>
-                                <td class="fs-13 text-muted">POL-2026-5022</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 868 8613</td>
-                                <td class="fs-13 text-muted">16/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$266.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Sarah', 'Garcia', 'POL-2026-5022', 'AIA Life', '09/08/1982', '021 868 8613', 'sarah.garcia@example.com', '82 Main Road', 'Sub7', 'Dunedin', '1470', '16/07/2026', '$266.00', 'Monthly', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Sarah Garcia', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Sarah Garcia', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Sarah Garcia', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Amit Miller</td>
-                                <td class="fs-13 text-muted">POL-2026-4475</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 text-muted">021 386 5526</td>
-                                <td class="fs-13 text-muted">08/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$308.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Amit', 'Miller', 'POL-2026-4475', 'Partners Life', '26/05/1985', '021 386 5526', 'amit.miller@example.com', '81 Main Road', 'Sub1', 'Christchurch', '2402', '08/07/2026', '$308.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Amit Miller', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Amit Miller', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Amit Miller', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">David Davis</td>
-                                <td class="fs-13 text-muted">POL-2026-4937</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 558 1282</td>
-                                <td class="fs-13 text-muted">23/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$224.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('David', 'Davis', 'POL-2026-4937', 'Chubb Life', '21/12/1990', '021 558 1282', 'david.davis@example.com', '21 Main Road', 'Sub5', 'Christchurch', '7625', '23/07/2026', '$224.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('David Davis', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('David Davis', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('David Davis', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Michael Rodriguez</td>
-                                <td class="fs-13 text-muted">POL-2026-7046</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 535 6419</td>
-                                <td class="fs-13 text-muted">09/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$218.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Michael', 'Rodriguez', 'POL-2026-7046', 'Chubb Life', '18/09/1986', '021 535 6419', 'michael.rodriguez@example.com', '55 Main Road', 'Sub8', 'Tauranga', '6023', '09/07/2026', '$218.00', 'Monthly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Michael Rodriguez', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Michael Rodriguez', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Michael Rodriguez', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Aarav Martinez</td>
-                                <td class="fs-13 text-muted">POL-2026-4155</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 text-muted">021 880 4033</td>
-                                <td class="fs-13 text-muted">24/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$401.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Aarav', 'Martinez', 'POL-2026-4155', 'Partners Life', '04/12/1992', '021 880 4033', 'aarav.martinez@example.com', '34 Main Road', 'Sub4', 'Napier', '5530', '24/07/2026', '$401.00', 'Annually', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Aarav Martinez', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Aarav Martinez', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Aarav Martinez', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Vandana Hernandez</td>
-                                <td class="fs-13 text-muted">POL-2026-5636</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 332 6912</td>
-                                <td class="fs-13 text-muted">05/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$240.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Vandana', 'Hernandez', 'POL-2026-5636', 'AIA Life', '27/04/1984', '021 332 6912', 'vandana.hernandez@example.com', '32 Main Road', 'Sub5', 'Auckland', '9751', '05/07/2026', '$240.00', 'Monthly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Vandana Hernandez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Vandana Hernandez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Vandana Hernandez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">James Lopez</td>
-                                <td class="fs-13 text-muted">POL-2026-5786</td>
-                                <td class="fs-13 fw-semibold text-dark">Fidelity Life</td>
-                                <td class="fs-13 text-muted">021 993 1200</td>
-                                <td class="fs-13 text-muted">15/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$274.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('James', 'Lopez', 'POL-2026-5786', 'Fidelity Life', '21/08/1978', '021 993 1200', 'james.lopez@example.com', '83 Main Road', 'Sub5', 'Napier', '8843', '15/07/2026', '$274.00', 'Monthly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('James Lopez', 'Fidelity Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('James Lopez', 'Fidelity Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('James Lopez', 'Fidelity Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Olivia Gonzalez</td>
-                                <td class="fs-13 text-muted">POL-2026-5136</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 603 2213</td>
-                                <td class="fs-13 text-muted">26/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$388.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Olivia', 'Gonzalez', 'POL-2026-5136', 'Chubb Life', '04/02/1987', '021 603 2213', 'olivia.gonzalez@example.com', '83 Main Road', 'Sub1', 'Wellington', '3444', '26/07/2026', '$388.00', 'Quarterly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Olivia Gonzalez', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Olivia Gonzalez', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Olivia Gonzalez', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Ethan Wilson</td>
-                                <td class="fs-13 text-muted">POL-2026-5066</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 710 4697</td>
-                                <td class="fs-13 text-muted">15/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$252.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Ethan', 'Wilson', 'POL-2026-5066', 'AIA Life', '18/07/1994', '021 710 4697', 'ethan.wilson@example.com', '109 Main Road', 'Sub9', 'Nelson', '8381', '15/07/2026', '$252.00', 'Annually', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Ethan Wilson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Ethan Wilson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Ethan Wilson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Arjun Anderson</td>
-                                <td class="fs-13 text-muted">POL-2026-6003</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 text-muted">021 857 2625</td>
-                                <td class="fs-13 text-muted">22/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$141.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Arjun', 'Anderson', 'POL-2026-6003', 'Asteron Life', '20/01/1994', '021 857 2625', 'arjun.anderson@example.com', '107 Main Road', 'Sub4', 'Christchurch', '5335', '22/07/2026', '$141.00', 'Monthly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Arjun Anderson', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Arjun Anderson', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Arjun Anderson', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Neha Thomas</td>
-                                <td class="fs-13 text-muted">POL-2026-3847</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 text-muted">021 518 8381</td>
-                                <td class="fs-13 text-muted">08/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$247.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Neha', 'Thomas', 'POL-2026-3847', 'Asteron Life', '03/03/1975', '021 518 8381', 'neha.thomas@example.com', '98 Main Road', 'Sub8', 'Tauranga', '1534', '08/07/2026', '$247.00', 'Annually', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Neha Thomas', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Neha Thomas', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Neha Thomas', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">John Taylor</td>
-                                <td class="fs-13 text-muted">POL-2026-8438</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 906 4241</td>
-                                <td class="fs-13 text-muted">09/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$172.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('John', 'Taylor', 'POL-2026-8438', 'AIA Life', '22/04/1983', '021 906 4241', 'john.taylor@example.com', '64 Main Road', 'Sub2', 'Christchurch', '3441', '09/07/2026', '$172.00', 'Monthly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('John Taylor', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('John Taylor', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('John Taylor', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Emma Moore</td>
-                                <td class="fs-13 text-muted">POL-2026-3718</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 text-muted">021 395 8195</td>
-                                <td class="fs-13 text-muted">09/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$356.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Emma', 'Moore', 'POL-2026-3718', 'Partners Life', '20/12/1993', '021 395 8195', 'emma.moore@example.com', '25 Main Road', 'Sub8', 'Tauranga', '7594', '09/07/2026', '$356.00', 'Annually', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Emma Moore', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Emma Moore', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Emma Moore', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Robert Jackson</td>
-                                <td class="fs-13 text-muted">POL-2026-8172</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 852 6280</td>
-                                <td class="fs-13 text-muted">08/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$445.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Robert', 'Jackson', 'POL-2026-8172', 'AIA Life', '20/01/1988', '021 852 6280', 'robert.jackson@example.com', '87 Main Road', 'Sub5', 'Auckland', '2496', '08/07/2026', '$445.00', 'Annually', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Robert Jackson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Robert Jackson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Robert Jackson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Sophia Martin</td>
-                                <td class="fs-13 text-muted">POL-2026-1339</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 text-muted">021 581 9502</td>
-                                <td class="fs-13 text-muted">19/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$323.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Sophia', 'Martin', 'POL-2026-1339', 'Partners Life', '19/01/1980', '021 581 9502', 'sophia.martin@example.com', '93 Main Road', 'Sub8', 'Tauranga', '3973', '19/07/2026', '$323.00', 'Annually', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Sophia Martin', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Sophia Martin', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Sophia Martin', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">William Lee</td>
-                                <td class="fs-13 text-muted">POL-2026-2494</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 428 2713</td>
-                                <td class="fs-13 text-muted">23/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$353.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('William', 'Lee', 'POL-2026-2494', 'Chubb Life', '12/07/1985', '021 428 2713', 'william.lee@example.com', '119 Main Road', 'Sub3', 'Dunedin', '7744', '23/07/2026', '$353.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('William Lee', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('William Lee', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('William Lee', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Isabella Perez</td>
-                                <td class="fs-13 text-muted">POL-2026-7561</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 text-muted">021 422 5135</td>
-                                <td class="fs-13 text-muted">27/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$100.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Isabella', 'Perez', 'POL-2026-7561', 'Asteron Life', '02/08/1977', '021 422 5135', 'isabella.perez@example.com', '51 Main Road', 'Sub2', 'Nelson', '9431', '27/07/2026', '$100.00', 'Annually', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Isabella Perez', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Isabella Perez', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Isabella Perez', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Daniel Thompson</td>
-                                <td class="fs-13 text-muted">POL-2026-8569</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 470 9167</td>
-                                <td class="fs-13 text-muted">09/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$381.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Daniel', 'Thompson', 'POL-2026-8569', 'Chubb Life', '02/04/1991', '021 470 9167', 'daniel.thompson@example.com', '90 Main Road', 'Sub8', 'Auckland', '4335', '09/07/2026', '$381.00', 'Monthly', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Daniel Thompson', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Daniel Thompson', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Daniel Thompson', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Mia White</td>
-                                <td class="fs-13 text-muted">POL-2026-8178</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 723 4920</td>
-                                <td class="fs-13 text-muted">18/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$308.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Mia', 'White', 'POL-2026-8178', 'Chubb Life', '04/01/1995', '021 723 4920', 'mia.white@example.com', '100 Main Road', 'Sub3', 'Tauranga', '1224', '18/07/2026', '$308.00', 'Monthly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Mia White', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Mia White', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Mia White', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Joseph Harris</td>
-                                <td class="fs-13 text-muted">POL-2026-2858</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 610 5781</td>
-                                <td class="fs-13 text-muted">16/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$224.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Joseph', 'Harris', 'POL-2026-2858', 'Chubb Life', '04/11/1979', '021 610 5781', 'joseph.harris@example.com', '75 Main Road', 'Sub5', 'Nelson', '8905', '16/07/2026', '$224.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Joseph Harris', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Joseph Harris', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Joseph Harris', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Charlotte Sanchez</td>
-                                <td class="fs-13 text-muted">POL-2026-3369</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 864 3236</td>
-                                <td class="fs-13 text-muted">11/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$359.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Charlotte', 'Sanchez', 'POL-2026-3369', 'Chubb Life', '07/10/1991', '021 864 3236', 'charlotte.sanchez@example.com', '120 Main Road', 'Sub2', 'Tauranga', '7798', '11/07/2026', '$359.00', 'Quarterly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Charlotte Sanchez', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Charlotte Sanchez', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Charlotte Sanchez', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Matthew Clark</td>
-                                <td class="fs-13 text-muted">POL-2026-5634</td>
-                                <td class="fs-13 fw-semibold text-dark">Partners Life</td>
-                                <td class="fs-13 text-muted">021 775 9022</td>
-                                <td class="fs-13 text-muted">16/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$276.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Matthew', 'Clark', 'POL-2026-5634', 'Partners Life', '27/10/1993', '021 775 9022', 'matthew.clark@example.com', '120 Main Road', 'Sub3', 'Napier', '9824', '16/07/2026', '$276.00', 'Quarterly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Matthew Clark', 'Partners Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Matthew Clark', 'Partners Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Matthew Clark', 'Partners Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Amelia Ramirez</td>
-                                <td class="fs-13 text-muted">POL-2026-9903</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 814 4912</td>
-                                <td class="fs-13 text-muted">02/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$262.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Priya Patel</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Amelia', 'Ramirez', 'POL-2026-9903', 'Chubb Life', '15/06/1981', '021 814 4912', 'amelia.ramirez@example.com', '83 Main Road', 'Sub7', 'Christchurch', '7730', '02/07/2026', '$262.00', 'Annually', 'Priya Patel', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Amelia Ramirez', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Amelia Ramirez', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Amelia Ramirez', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">David Chen</td>
-                                <td class="fs-13 text-muted">POL-2026-7246</td>
-                                <td class="fs-13 fw-semibold text-dark">Chubb Life</td>
-                                <td class="fs-13 text-muted">021 607 1606</td>
-                                <td class="fs-13 text-muted">28/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$325.00 <small class="text-muted">(Monthly)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Royson Pinto</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('David', 'Chen', 'POL-2026-7246', 'Chubb Life', '22/11/1979', '021 607 1606', 'david.chen@example.com', '26 Main Road', 'Sub9', 'Dunedin', '2644', '28/07/2026', '$325.00', 'Monthly', 'Royson Pinto', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('David Chen', 'Chubb Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('David Chen', 'Chubb Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('David Chen', 'Chubb Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Harper Davis</td>
-                                <td class="fs-13 text-muted">POL-2026-8486</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
-                                <td class="fs-13 text-muted">021 991 3529</td>
-                                <td class="fs-13 text-muted">20/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$303.00 <small class="text-muted">(Annually)</small>
-                                </td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Harper', 'Davis', 'POL-2026-8486', 'AIA Life', '24/03/1988', '021 991 3529', 'harper.davis@example.com', '19 Main Road', 'Sub8', 'Tauranga', '6546', '20/07/2026', '$303.00', 'Annually', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Harper Davis', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Harper Davis', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Harper Davis', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-dark fs-13">Andrew Evans</td>
-                                <td class="fs-13 text-muted">POL-2026-6383</td>
-                                <td class="fs-13 fw-semibold text-dark">Asteron Life</td>
-                                <td class="fs-13 text-muted">021 835 8994</td>
-                                <td class="fs-13 text-muted">21/07/2026</td>
-                                <td class="fs-13 fw-bold text-dark">$450.00 <small
-                                        class="text-muted">(Quarterly)</small></td>
-                                <td class="fs-13 text-muted">Sushant Yadav</td>
-                                <td><span class="badge bg-soft-warning text-warning fs-11">Yes</span></td>
-                                <td class="fs-13 text-muted">Follow up with underwriting next week.</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewNpwDetails('Andrew', 'Evans', 'POL-2026-6383', 'Asteron Life', '13/06/1995', '021 835 8994', 'andrew.evans@example.com', '79 Main Road', 'Sub1', 'Hamilton', '4846', '21/07/2026', '$450.00', 'Quarterly', 'Sushant Yadav', 'Deferred pending underwriting review of medical checklist.', 'Yes', 'Follow up with underwriting next week.')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Andrew Evans', 'Asteron Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Andrew Evans', 'Asteron Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Andrew Evans', 'Asteron Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
+                            @empty
+                            <tr><td colspan="9" class="text-center text-muted py-4">No NPW Deferred records found.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -895,7 +273,7 @@
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary btn-sm px-4 fw-bold"
-                        onclick="$('#viewNpwModal').modal('hide'); editNpwDetails($('#viewNpwFirstName').val(), $('#viewNpwLastName').val(), $('#viewNpwPolicyNo').val(), $('#viewNpwCompany').val(), $('#viewNpwDob').val(), $('#viewNpwMobile').val(), $('#viewNpwEmail').val(), $('#viewNpwAddress').val(), $('#viewNpwSuburb').val(), $('#viewNpwCity').val(), $('#viewNpwPostCode').val(), $('#viewNpwIssueDate').val(), $('#viewNpwPremium').val(), $('#viewNpwPremiumMode').val(), $('#viewNpwAdmin').val(), $('#viewNpwNotesComments').val(), $('#viewNpwPending').val(), $('#viewNpwComments').val());"><i
+                        onclick="editNpwDetails($('#viewNpwFirstName').val(), $('#viewNpwLastName').val(), $('#viewNpwPolicyNo').val(), $('#viewNpwCompany').val(), $('#viewNpwDob').val(), $('#viewNpwMobile').val(), $('#viewNpwEmail').val(), $('#viewNpwAddress').val(), $('#viewNpwSuburb').val(), $('#viewNpwCity').val(), $('#viewNpwPostCode').val(), $('#viewNpwIssueDate').val(), $('#viewNpwPremium').val(), $('#viewNpwPremiumMode').val(), $('#viewNpwAdmin').val(), $('#viewNpwNotesComments').val(), $('#viewNpwPending').val(), $('#viewNpwComments').val());"><i
                             class="feather-edit me-1"></i> Edit Record</button>
                 </div>
             </div>
@@ -922,26 +300,26 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold fs-13 text-dark">First Name *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">First Name <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwFirstNameInput"
                                         placeholder="First name" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Last Name *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Last Name <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwLastNameInput"
                                         placeholder="Last name" required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold fs-13 text-dark">DOB *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">DOB <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="npwDobInput" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Mobile *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Mobile <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwMobileInput"
                                         placeholder="02X XXX XXXX" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Email *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Email <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control" id="npwEmailInput"
                                         placeholder="name@example.com" required>
                                 </div>
@@ -955,22 +333,22 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-5">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Address *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Address <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwAddressInput"
                                         placeholder="Street Address" required>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Suburb *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Suburb <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwSuburbInput" placeholder="Suburb"
                                         required>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label fw-semibold fs-13 text-dark">City *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">City <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwCityInput" placeholder="City"
                                         required>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Post Code *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Post Code <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwPostCodeInput"
                                         placeholder="Post Code" required>
                                 </div>
@@ -984,27 +362,31 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Policy No. *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Policy No. <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwPolicyNoInput" placeholder="POL-XXXX"
                                         required>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Company *</label>
-                                    <input type="text" class="form-control" id="npwCompanyInput"
-                                        placeholder="Insurance Company (e.g. AIA Life)" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company</label>
+                                    <select class="form-select" id="npwCompanyInput" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Issue Date *</label>
-                                    <input type="date" class="form-control" id="npwIssueDateInput" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Issue Date <span class="text-danger"></span></label>
+                                    <input type="date" class="form-control" id="npwIssueDateInput" name="npw_issue_date">
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Premium *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Premium <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="npwPremiumInput"
                                         placeholder="e.g. 150.00" required>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold fs-13 text-dark">Premium Mode</label>
-                                    <select class="form-select" id="npwPremiumModeSelect">
+                                    <select class="form-select" id="npwPremiumModeSelect" name="npw_premium_mode">
                                         <option value="Weekly">Weekly</option>
                                         <option value="Fortnightly">Fortnightly</option>
                                         <option value="Monthly" selected>Monthly</option>
@@ -1012,15 +394,16 @@
                                     </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Handler)</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
                                     <select class="form-select" id="npwAdminSelect">
-                                        <option value="Sushant Yadav" selected>Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold fs-13 text-dark">Pending</label>
-                                    <select class="form-select" id="npwPendingSelect">
+                                    <select class="form-select" id="npwPendingSelect" name="npw_pending">
                                         <option value="Yes" selected>Yes</option>
                                         <option value="No">No</option>
                                     </select>
@@ -1083,7 +466,8 @@
                     <h5 class="modal-title text-white mb-0"><i class="feather-git-pull-request me-2"></i> Client Service Request - <span id="reqClientNameHeader"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="clientRequestForm" onsubmit="event.preventDefault(); handleSaveClientRequest();">
+                <form id="clientRequestForm" method="POST" action="" data-action-base="{{ url('/clients/npw-deferred') }}">
+                    @csrf
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -1091,16 +475,21 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Date *</label>
-                                    <input type="date" class="form-control" id="reqDateInput" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="reqDateInput" name="inforce_date" required>
                                 </div>
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <input type="text" class="form-control" id="reqClientNameInput" placeholder="Client Name" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="reqClientNameInput" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <input type="text" class="form-control" id="reqCompanyInput" placeholder="Insurance Company" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company</label>
+                                    <select class="form-select" id="reqCompanyInput" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -1110,37 +499,38 @@
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type *</label>
-                                    <select class="form-select" id="reqTypeSelect" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="reqTypeSelect" name="inforce_request_type" required>
+                                        <option value="" disabled selected>Select Request Type</option>
                                         <option value="LOA">LOA</option>
-                                        <option value="Update Address">Update Address</option>
+                                        <option value="Address update">Address update</option>
                                         <option value="Put the premium on hold">Put the premium on hold</option>
                                         <option value="LOA / Change of Adviser">LOA / Change of Adviser</option>
-                                        <option value="Correctify Name">Correctify Name</option>
-                                        <option value="Premium Deduction of 1 month">Premium Deduction of 1 month</option>
-                                        <option value="Birth Certificate to add name inbuilt cover">Birth Certificate to add name inbuilt cover</option>
+                                        <option value="Name Correction">Name Correction</option>
                                         <option value="Update Payment Details - DD">Update Payment Details - DD</option>
+                                        <option value="MOT">MOT</option>
+                                        <option value="Other">Other</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Process Status</label>
-                                    <select class="form-select" id="reqProcessSelect">
-                                        <option value="Logged">Logged</option>
+                                    <select class="form-select" id="reqProcessSelect" name="inforce_process_status">
+                                        <option value="" disabled selected>Select Process Status</option>
+                                        <option value="Login">Login</option>
                                         <option value="In Processing">In Processing</option>
-                                        <option value="Submitted to Insurer">Submitted to Insurer</option>
                                         <option value="Pending Information">Pending Information</option>
                                         <option value="Completed">Completed</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Process by *</label>
-                                    <select class="form-select" id="reqProcessBySelect" required>
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
-                                        <option value="Operations Team">Operations Team</option>
-                                        <option value="Compliance Officer">Compliance Officer</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Process by</label>
+                                    <select class="form-select" id="reqProcessBySelect" name="inforce_process_by">
+                                        <option value="" disabled selected>Select User</option>
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -1152,17 +542,17 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6 col-sm-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Results / Outcome</label>
-                                    <textarea class="form-control" id="reqOutcomeInput" rows="2" placeholder="e.g. Address updated with AIA portal successfully."></textarea>
+                                    <textarea class="form-control" id="reqOutcomeInput" name="inforce_outcome" rows="2" placeholder="e.g. Address updated with AIA portal successfully." maxlength="255"></textarea>
                                 </div>
                                 <div class="col-md-6 col-sm-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Comments</label>
-                                    <textarea class="form-control" id="reqCommentsInput" rows="2" placeholder="Internal notes or adviser instructions..."></textarea>
+                                    <textarea class="form-control" id="reqCommentsInput" name="inforce_comments" rows="2" placeholder="Internal notes or adviser instructions..." maxlength="1000"></textarea>
                                 </div>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Finished Day (Date)</label>
-                                    <input type="date" class="form-control" id="reqFinishedDateInput">
+                                    <input type="date" class="form-control" id="reqFinishedDateInput" name="inforce_finished_date">
                                 </div>
                             </div>
                         </div>
@@ -1184,7 +574,8 @@
                     <h5 class="modal-title text-white mb-0"><i class="feather-shield me-2"></i> <span id="claimModalTitle">New Claim Update</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="lodgeClaimForm" onsubmit="event.preventDefault(); handleAddNewClaim();">
+                <form id="lodgeClaimForm" method="POST" action="" data-action-base="{{ url('/clients/npw-deferred') }}">
+                    @csrf
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -1192,37 +583,28 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="claimClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <select class="form-select" id="claimCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company</label>
+                                    <select class="form-select" id="claimCompanySelect" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description) *</label>
-                                    <input type="text" class="form-control" id="claimTypeInput" placeholder="e.g. Medical Surgery / Trauma" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description) <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimTypeInput" name="claim_type" placeholder="e.g. Medical Surgery / Trauma" required maxlength="100">
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Claim Handler)</label>
-                                    <select class="form-select" id="claimAdminSelect">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="claimAdminSelect" name="claim_admin">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -1235,11 +617,11 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Processed Date</label>
-                                    <input type="date" class="form-control" id="claimProcessedDateInput">
+                                    <input type="date" class="form-control" id="claimProcessedDateInput" name="claim_processed_date">
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Update (Status)</label>
-                                    <select class="form-select" id="claimUpdateSelect">
+                                    <select class="form-select" id="claimUpdateSelect" name="claim_update_status">
                                         <option value="Under Assessment">Under Assessment</option>
                                         <option value="Medical Review">Medical Review</option>
                                         <option value="Document Verification">Document Verification</option>
@@ -1249,14 +631,14 @@
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Approved Date</label>
-                                    <input type="date" class="form-control" id="claimApprovedDateInput">
+                                    <input type="date" class="form-control" id="claimApprovedDateInput" name="claim_approved_date">
                                 </div>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Result / Outcome</label>
-                                    <input type="text" class="form-control" id="claimOutcomeInput" placeholder="e.g. Approved / Paid $18,500">
+                                    <input type="text" class="form-control" id="claimOutcomeInput" name="claim_result" placeholder="e.g. Approved / Paid $18,500" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -1278,7 +660,8 @@
                     <h5 class="modal-title text-white mb-0"><i class="feather-file-minus me-2"></i> <span id="cancModalTitle">New Cancellation Update</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addCancellationForm" onsubmit="event.preventDefault(); handleAddNewCancellation();">
+                <form id="addCancellationForm" method="POST" action="" data-action-base="{{ url('/clients/npw-deferred') }}">
+                    @csrf
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -1286,27 +669,17 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="cancClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cancClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Company *</label>
-                                    <select class="form-select" id="cancCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company</label>
+                                    <select class="form-select" id="cancCompanySelect" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                             </div>
                         </div>
@@ -1318,17 +691,18 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Cancellation Sent</label>
-                                    <input type="date" class="form-control" id="cancDateSentInput">
+                                    <input type="date" class="form-control" id="cancDateSentInput" name="canc_date_sent">
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Completed</label>
-                                    <input type="text" class="form-control" id="cancCompletedInput" placeholder="e.g. 15/08/2026 or Pending">
+                                    <input type="date" class="form-control" id="cancCompletedInput" name="canc_completed_date">
                                 </div>
                                 <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Handler)</label>
-                                    <select class="form-select" id="cancAdminSelect">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="cancAdminSelect" name="canc_admin">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -1336,7 +710,7 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Outcome</label>
-                                    <input type="text" class="form-control" id="cancOutcomeInput" placeholder="e.g. Cancelled - Premium Cost Concerns">
+                                    <input type="text" class="form-control" id="cancOutcomeInput" name="canc_outcome" placeholder="e.g. Cancelled - Premium Cost Concerns" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -1348,7 +722,7 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Comments</label>
-                                    <textarea class="form-control" id="cancCommentsInput" rows="3" placeholder="Enter comments or cancellation reason..."></textarea>
+                                    <textarea class="form-control" id="cancCommentsInput" name="canc_comments" rows="3" placeholder="Enter comments or cancellation reason..." maxlength="1000"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1363,9 +737,70 @@
         </div>
     </div>
 
+
+    <!-- Modal: Mark as Inactive -->
+    <div class="modal fade" id="addInactiveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: #0A192F;">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-user-x me-2"></i> Mark Client as Inactive</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addInactiveForm" method="POST" action="" data-action-base="{{ url('/clients/npw-deferred') }}">
+                    @csrf
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3 text-secondary" style="font-size: 3rem;">
+                            <i class="feather-alert-circle"></i>
+                        </div>
+                        <h4 class="mb-3 text-dark fw-bold">Are you sure?</h4>
+                        <p class="text-muted fs-14">
+                            You are about to move <strong id="inactiveClientNameDisplay"></strong> to the Inactive Clients directory.
+                        </p>
+                    </div>
+                    <div class="modal-footer bg-light justify-content-center">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn px-4 fw-bold text-white" style="background-color: #00A8B5; border-color: #00A8B5;" onmouseover="this.style.backgroundColor='#008C97'" onmouseout="this.style.backgroundColor='#00A8B5'">Update Inactive Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade" id="alreadyNpwDeferredModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-check-circle me-2"></i> NPW Deferred</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="status">
+                        <i class="feather-check-circle"></i>
+                        <span>This client is already in NPW Deferred.</span>
+                    </div>
+                    <div class="row g-3 fs-13">
+                        <div class="col-6"><strong>Client:</strong><br><span id="alreadyNpwClientName"></span></div>
+                        <div class="col-6"><strong>Company:</strong><br><span id="alreadyNpwCompany"></span></div>
+                        <div class="col-6"><strong>Issue Date:</strong><br><span id="alreadyNpwIssueDate"></span></div>
+                        <div class="col-6"><strong>Premium:</strong><br><span id="alreadyNpwPremium"></span></div>
+                        <div class="col-6"><strong>Admin:</strong><br><span id="alreadyNpwAdmin"></span></div>
+                        <div class="col-6"><strong>Pending:</strong><br><span id="alreadyNpwPending"></span></div>
+                        <div class="col-12"><strong>Comments:</strong><br><span id="alreadyNpwComments"></span></div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light justify-content-center">
+                    <button type="button" class="btn btn-primary btn-sm px-4" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@include('pages.auth.partials.client-details-modal')
 @push('scripts')
-    <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/clients-npw-deferred.js?v=1.2') }}"></script>
+    <script src="{{ asset('assets/js/pages/clients-login.js') }}?v={{ filemtime(public_path('assets/js/pages/clients-login.js')) }}"></script>
+    <script src="{{ asset('assets/js/pages/clients-npw-deferred.js') }}?v={{ filemtime(public_path('assets/js/pages/clients-npw-deferred.js')) }}"></script>
 @endpush
 
 @endsection
+
+

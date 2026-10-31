@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('clients', function (Blueprint $table) {
+            $table->date('canc_date_sent')->nullable();
+            $table->date('canc_completed_date')->nullable();
+            $table->string('canc_outcome', 255)->nullable();
+            $table->text('canc_comments')->nullable();
+            $table->string('canc_admin', 100)->nullable();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('clients', function (Blueprint $table) {
+            $table->dropColumn([
+                'canc_date_sent',
+                'canc_completed_date',
+                'canc_outcome',
+                'canc_comments',
+                'canc_admin',
+            ]);
+        });
+    }
+};

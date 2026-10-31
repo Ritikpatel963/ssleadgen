@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test JSON Upload</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            background: #252526;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        h1 { color: #4ec9b0; }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #1177bb; }
+        input[type="file"] {
+            padding: 10px;
+            margin: 10px 0;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            border-radius: 5px;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #3c3c3c;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        #result { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Direct JSON Upload Test</h1>
+        <p>This tests the JSON upload endpoint directly without the full Laravel page.</p>
+        
+        <div style="margin: 20px 0;">
+            <h3>Step 1: Get CSRF Token</h3>
+            <button onclick="getCsrfToken()">Fetch CSRF Token</button>
+            <div id="csrfResult"></div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3>Step 2: Test Endpoint (Simple)</h3>
+            <button onclick="testEndpoint()">Test /document-upload-test</button>
+            <div id="testResult"></div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3>Step 3: Upload File</h3>
+            <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg">
+            <br>
+            <button onclick="uploadFile()">Upload as Base64 JSON</button>
+            <div id="uploadResult"></div>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let csrfToken = null;
+
+        async function getCsrfToken() {
+            const result = document.getElementById('csrfResult');
+            result.innerHTML = '<p>Fetching...</p>';
+            
+            try {
+                // Try to get from current page first
+                const response = await fetch('/utilities/documents');
+                const html = await response.text();
+                const match = html.match(/name="csrf-token" content="([^"]+)"/);
+                
+                if (match) {
+                    csrfToken = match[1];
+                    result.innerHTML = `<pre class="success">✅ CSRF Token: ${csrfToken.substring(0, 20)}...</pre>`;
+                } else {
+                    result.innerHTML = '<pre class="error">❌ Could not extract CSRF token</pre>';
+                }
+            } catch (error) {
+                result.innerHTML = `<pre class="error">❌ Error: ${error.message}</pre>`;
+            }
+        }
+
+        async function testEndpoint() {
+            const result = document.getElementById('testResult');
+            
+            if (!csrfToken) {
+                result.innerHTML = '<pre class="error">❌ Get CSRF token first!</pre>';
+                return;
+            }
+
+            result.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const payload = {
+                    file_name: 'test.pdf',
+                    file_size: 1234,
+                    file_data: 'data:application/pdf;base64,JVBERi0xLjQK...'
+                };
+
+                const response = await fetch('/document-upload-test', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                result.innerHTML = `<pre class="success">✅ Response (${response.status}):\n${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                result.innerHTML = `<pre class="error">❌ Error: ${error.message}</pre>`;
+            }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const result = document.getElementById('uploadResult');
+            
+            if (!csrfToken) {
+                result.innerHTML = '<pre class="error">❌ Get CSRF token first!</pre>';
+                return;
+            }
+
+            if (!fileInput.files.length) {
+                result.innerHTML = '<pre class="error">❌ Select a file first!</pre>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            if (file.size > 10 * 1024 * 1024) {
+                result.innerHTML = '<pre class="error">❌ File too large (max 10MB)</pre>';
+                return;
+            }
+
+            result.innerHTML = '<p>Converting to base64...</p>';
+
+            try {
+                const base64 = await fileToBase64(file);
+                
+                result.innerHTML = '<p>Uploading...</p>';
+
+                const payload = {
+                    file_data: base64,
+                    file_name: file.name,
+                    file_size: file.size,
+                    file_type: file.type
+                };
+
+                const response = await fetch('/document-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                    if (data.success) {
+                        result.innerHTML = `<pre class="success">✅ Upload successful!\n${JSON.stringify(data, null, 2)}</pre>`;
+                    } else {
+                        result.innerHTML = `<pre class="error">❌ Upload failed:\n${JSON.stringify(data, null, 2)}</pre>`;
+                    }
+                } catch (e) {
+                    result.innerHTML = `<pre class="error">❌ Server returned non-JSON response (${response.status}):\n${responseText.substring(0, 500)}</pre>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<pre class="error">❌ Error: ${error.message}</pre>`;
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Auto-fetch CSRF token on load
+        window.addEventListener('load', () => {
+            getCsrfToken();
+        });
+    </script>
+</body>
+</html>

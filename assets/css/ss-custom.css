@@ -385,22 +385,23 @@ body.nxl-mini-navigation .nxl-item.nxl-hasmenu .nxl-submenu {
     display: none !important;
 }
 
+.nxl-item.nxl-custom-hasmenu:not(.menu-open) .nxl-submenu {
+    display: none !important;
+}
+
 /* Force Clients parent navigation item to be persistently active (cyan background) on all pages */
-.nxl-item.nxl-hasmenu.active > a,
-.nxl-item.nxl-hasmenu:has(a .feather-users) > a {
+.nxl-item.nxl-custom-hasmenu.active > a {
     background-color: var(--ss-cyan) !important;
     color: #ffffff !important;
     border-radius: 4px;
 }
 
-.nxl-item.nxl-hasmenu.active > a *,
-.nxl-item.nxl-hasmenu:has(a .feather-users) > a * {
+.nxl-item.nxl-custom-hasmenu.active > a * {
     color: #ffffff !important;
 }
 
 /* Force Clients submenu to always be open in expanded sidebar state on all pages */
-body:not(.nxl-mini-navigation) .nxl-item.nxl-hasmenu.active .nxl-submenu,
-body:not(.nxl-mini-navigation) .nxl-item.nxl-hasmenu:has(a .feather-users) .nxl-submenu {
+body:not(.nxl-mini-navigation) .nxl-item.nxl-custom-hasmenu.menu-open .nxl-submenu {
     display: block !important;
     padding: 4px 0 4px 43px !important;
     margin: 0 !important;

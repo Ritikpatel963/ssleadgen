@@ -292,8 +292,8 @@ a:hover {
 }
 
 /* ACTIVE MAIN MENU ITEM (FULL WIDTH CYAN BLOCK) */
-.nxl-item.active:not(.nxl-hasmenu) .nxl-link,
-.nxl-item.active.nxl-hasmenu>.nxl-link {
+.nxl-item.active:not(.nxl-custom-hasmenu) .nxl-link,
+.nxl-item.active.nxl-custom-hasmenu>.nxl-link {
     color: #ffffff !important;
     background-color: #00A8B5 !important;
     border-radius: 0 !important;
@@ -301,11 +301,17 @@ a:hover {
     font-weight: 700 !important;
 }
 
-/* ALWAYS KEEP CLIENTS SUBMENU EXPANDED & OPEN */
-.nxl-item.nxl-hasmenu .nxl-submenu {
-    display: block !important;
+/* Keep custom navigation submenus closed until their parent is opened. */
+.nxl-item.nxl-custom-hasmenu .nxl-submenu {
+    display: none !important;
     padding: 4px 0 4px 43px;
     margin: 0;
+    animation: none !important;
+    transition: none !important;
+}
+
+.nxl-item.nxl-custom-hasmenu.clients-menu-expanded .nxl-submenu {
+    display: block !important;
 }
 
 .nxl-submenu .nxl-item .nxl-link {
@@ -511,7 +517,7 @@ a:hover {
     position: absolute;
     top: 100%;
     right: 0;
-    width: 230px;
+    width: 270px;
     background: #ffffff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -585,11 +591,11 @@ a:hover {
 }
 
 .action-kebab-dropdown {
-    position: absolute !important;
-    top: 100% !important;
-    bottom: auto !important;
-    right: 0 !important;
-    left: auto !important;
+    position: absolute;
+    top: 100%;
+    bottom: auto;
+    right: 0;
+    left: auto;
     min-width: 150px !important;
     background: #ffffff !important;
     border: 1px solid var(--color-border) !important;

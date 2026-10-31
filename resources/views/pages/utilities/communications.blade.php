@@ -52,7 +52,7 @@
                 <form onsubmit="event.preventDefault(); alert('Message Sent Successfully!'); $('#sendMsgModal').modal('hide');">
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold fs-13 text-dark">Recipient Client *</label>
+                            <label class="form-label fw-semibold fs-13 text-dark">Recipient Client <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" placeholder="Select Client" required>
                         </div>
                         <div class="mb-3">
@@ -68,7 +68,7 @@
                             <input type="text" class="form-control" placeholder="Subject">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold fs-13 text-dark">Message Content *</label>
+                            <label class="form-label fw-semibold fs-13 text-dark">Message Content <span class="text-danger">*</span></label>
                             <textarea class="form-control" rows="3" placeholder="Type message body..." required></textarea>
                         </div>
                     </div>

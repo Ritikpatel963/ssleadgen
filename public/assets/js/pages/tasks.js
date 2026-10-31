@@ -1,244 +1,447 @@
 /* Page script for tasks */
 let tasksDataTable = null;
+let activeTaskNotes = [];
 
-// Force clear task local storage once to load new mock data
-if (!localStorage.getItem('ss_tasks_loaded_v5')) {
-    localStorage.removeItem('ss_tasks');
-    localStorage.removeItem('ss_task_notes');
-    localStorage.setItem('ss_tasks_loaded_v5', 'true');
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+function escapeHtml(value) {
+    const element = document.createElement('div');
+    element.textContent = value ?? '';
+    return element.innerHTML;
 }
 
-// Get current date time string helper
-function getCurrentDateTimeString() {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    
-    let hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    const strTime = hours + ':' + minutes + ' ' + ampm;
-    
-    return `${day} ${month} ${year}, ${strTime}`;
+function formatTaskDate(date) {
+    if (!date) return '';
+    const parsedDate = String(date).includes('T') ? new Date(date) : new Date(`${date}T00:00:00`);
+    return parsedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const defaultTasks = [{'title': 'Annual Review Call', 'client': 'Kishore Johnson', 'date': '08 Aug 2026', 'priority': 'Medium', 'status': 'Pending', 'id': 'task-status-1'}, {'title': 'Send Policy Renewal Document', 'client': 'Suman Williams', 'date': '02 Aug 2026', 'priority': 'High', 'status': 'Pending', 'id': 'task-status-2'}, {'title': 'Task: Follow up cover illustration #3', 'client': 'Rahul Brown', 'date': '21 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-3'}, {'title': 'Task: Follow up cover illustration #4', 'client': 'Priya Jones', 'date': '03 Aug 2026', 'priority': 'High', 'status': 'Pending', 'id': 'task-status-4'}, {'title': 'Task: Follow up cover illustration #5', 'client': 'Sarah Garcia', 'date': '20 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-5'}, {'title': 'Task: Follow up renewal #6', 'client': 'Amit Miller', 'date': '21 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-6'}, {'title': 'Task: Follow up claim docs #7', 'client': 'David Davis', 'date': '23 Aug 2026', 'priority': 'High', 'status': 'Pending', 'id': 'task-status-7'}, {'title': 'Task: Follow up medical test result #8', 'client': 'Michael Rodriguez', 'date': '14 Aug 2026', 'priority': 'High', 'status': 'Pending', 'id': 'task-status-8'}, {'title': 'Task: Follow up medical test result #9', 'client': 'Aarav Martinez', 'date': '08 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-9'}, {'title': 'Task: Follow up cover illustration #10', 'client': 'Vandana Hernandez', 'date': '06 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-10'}, {'title': 'Task: Follow up renewal #11', 'client': 'James Lopez', 'date': '17 Aug 2026', 'priority': 'Medium', 'status': 'Pending', 'id': 'task-status-11'}, {'title': 'Task: Follow up renewal #12', 'client': 'Olivia Gonzalez', 'date': '17 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-12'}, {'title': 'Task: Follow up renewal #13', 'client': 'Ethan Wilson', 'date': '13 Aug 2026', 'priority': 'Medium', 'status': 'Pending', 'id': 'task-status-13'}, {'title': 'Task: Follow up renewal #14', 'client': 'Arjun Anderson', 'date': '21 Aug 2026', 'priority': 'Medium', 'status': 'Pending', 'id': 'task-status-14'}, {'title': 'Task: Follow up medical test result #15', 'client': 'Neha Thomas', 'date': '09 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-15'}, {'title': 'Task: Follow up renewal #16', 'client': 'John Taylor', 'date': '12 Aug 2026', 'priority': 'High', 'status': 'Pending', 'id': 'task-status-16'}, {'title': 'Task: Follow up medical test result #17', 'client': 'Emma Moore', 'date': '08 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-17'}, {'title': 'Task: Follow up renewal #18', 'client': 'Robert Jackson', 'date': '25 Aug 2026', 'priority': 'Low', 'status': 'Pending', 'id': 'task-status-18'}, {'title': 'Task: Follow up medical test result #19', 'client': 'Sophia Martin', 'date': '05 Aug 2026', 'priority': 'High', 'status': 'Completed', 'id': 'task-status-19'}, {'title': 'Task: Follow up medical test result #20', 'client': 'William Lee', 'date': '18 Aug 2026', 'priority': 'Medium', 'status': 'Completed', 'id': 'task-status-20'}, {'title': 'Task: Follow up claim docs #21', 'client': 'Isabella Perez', 'date': '27 Aug 2026', 'priority': 'Low', 'status': 'Completed', 'id': 'task-status-21'}, {'title': 'Task: Follow up cover illustration #22', 'client': 'Daniel Thompson', 'date': '23 Aug 2026', 'priority': 'Medium', 'status': 'Completed', 'id': 'task-status-22'}, {'title': 'Task: Follow up claim docs #23', 'client': 'Mia White', 'date': '26 Aug 2026', 'priority': 'High', 'status': 'Completed', 'id': 'task-status-23'}, {'title': 'Task: Follow up renewal #24', 'client': 'Joseph Harris', 'date': '23 Aug 2026', 'priority': 'Medium', 'status': 'Completed', 'id': 'task-status-24'}, {'title': 'Task: Follow up renewal #25', 'client': 'Charlotte Sanchez', 'date': '10 Aug 2026', 'priority': 'High', 'status': 'Completed', 'id': 'task-status-25'}, {'title': 'Task: Follow up renewal #26', 'client': 'Matthew Clark', 'date': '26 Aug 2026', 'priority': 'High', 'status': 'Completed', 'id': 'task-status-26'}, {'title': 'Task: Follow up renewal #27', 'client': 'Amelia Ramirez', 'date': '11 Aug 2026', 'priority': 'Medium', 'status': 'Completed', 'id': 'task-status-27'}, {'title': 'Task: Follow up cover illustration #28', 'client': 'David Chen', 'date': '27 Aug 2026', 'priority': 'Low', 'status': 'Completed', 'id': 'task-status-28'}, {'title': 'Task: Follow up cover illustration #29', 'client': 'Harper Davis', 'date': '09 Aug 2026', 'priority': 'High', 'status': 'Completed', 'id': 'task-status-29'}, {'title': 'Task: Follow up claim docs #30', 'client': 'Andrew Evans', 'date': '10 Aug 2026', 'priority': 'Medium', 'status': 'Completed', 'id': 'task-status-30'}];
-
-let tasksList = [];
-try {
-    const stored = localStorage.getItem('ss_tasks');
-    if (stored) {
-        tasksList = JSON.parse(stored);
-    } else {
-        tasksList = defaultTasks;
-        localStorage.setItem('ss_tasks', JSON.stringify(tasksList));
-    }
-} catch(e) {
-    tasksList = defaultTasks;
+function formatTaskTime(time) {
+    if (!time) return '';
+    return new Date(`1970-01-01T${time}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-const defaultTaskNotes = {'Annual Review Call': [{'text': 'Advisory task created for Kishore Johnson.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Send Policy Renewal Document': [{'text': 'Advisory task created for Suman Williams.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #3': [{'text': 'Advisory task created for Rahul Brown.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #4': [{'text': 'Advisory task created for Priya Jones.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #5': [{'text': 'Advisory task created for Sarah Garcia.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #6': [{'text': 'Advisory task created for Amit Miller.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up claim docs #7': [{'text': 'Advisory task created for David Davis.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up medical test result #8': [{'text': 'Advisory task created for Michael Rodriguez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up medical test result #9': [{'text': 'Advisory task created for Aarav Martinez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #10': [{'text': 'Advisory task created for Vandana Hernandez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #11': [{'text': 'Advisory task created for James Lopez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #12': [{'text': 'Advisory task created for Olivia Gonzalez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #13': [{'text': 'Advisory task created for Ethan Wilson.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #14': [{'text': 'Advisory task created for Arjun Anderson.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up medical test result #15': [{'text': 'Advisory task created for Neha Thomas.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #16': [{'text': 'Advisory task created for John Taylor.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up medical test result #17': [{'text': 'Advisory task created for Emma Moore.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #18': [{'text': 'Advisory task created for Robert Jackson.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Pending.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up medical test result #19': [{'text': 'Advisory task created for Sophia Martin.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up medical test result #20': [{'text': 'Advisory task created for William Lee.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up claim docs #21': [{'text': 'Advisory task created for Isabella Perez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #22': [{'text': 'Advisory task created for Daniel Thompson.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up claim docs #23': [{'text': 'Advisory task created for Mia White.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #24': [{'text': 'Advisory task created for Joseph Harris.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #25': [{'text': 'Advisory task created for Charlotte Sanchez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #26': [{'text': 'Advisory task created for Matthew Clark.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up renewal #27': [{'text': 'Advisory task created for Amelia Ramirez.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #28': [{'text': 'Advisory task created for David Chen.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up cover illustration #29': [{'text': 'Advisory task created for Harper Davis.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}], 'Task: Follow up claim docs #30': [{'text': 'Advisory task created for Andrew Evans.', 'timestamp': '10 Aug 2026, 09:00 AM'}, {'text': 'Sent follow-up reminder to client.', 'timestamp': '12 Aug 2026, 02:30 PM'}, {'text': 'Status updated: Completed.', 'timestamp': '15 Aug 2026, 04:00 PM'}]};
-
-let taskNotes = {};
-try {
-    const stored = localStorage.getItem('ss_task_notes');
-    if (stored) {
-        taskNotes = JSON.parse(stored);
-    } else {
-        taskNotes = defaultTaskNotes;
-        localStorage.setItem('ss_task_notes', JSON.stringify(taskNotes));
-    }
-} catch(e) {
-    taskNotes = defaultTaskNotes;
+function priorityBadge(priority) {
+    const styles = { High: 'bg-soft-danger text-danger', Medium: 'bg-soft-primary text-primary', Low: 'bg-soft-info text-info' };
+    return `<span class="badge ${styles[priority] || styles.Medium} fs-11">${escapeHtml(priority)}</span>`;
 }
 
-function openTaskNotesModal(title, client) {
-    if (!taskNotes[title]) {
-        taskNotes[title] = [{ text: 'Task created.', timestamp: getCurrentDateTimeString() }];
-        localStorage.setItem('ss_task_notes', JSON.stringify(taskNotes));
-    }
-    
-    $('#taskNotesTitleHeader').text(title);
-    $('#taskNotesClientSpan').text(client);
-    
-    let notesHtml = '';
-    const totalNotes = taskNotes[title].length;
-    for (let i = totalNotes - 1; i >= 0; i--) {
-        const note = taskNotes[title][i];
-        const text = typeof note === 'string' ? note : note.text;
-        const timestamp = typeof note === 'string' ? '18 Aug 2026, 09:00 AM' : note.timestamp;
-        
-        notesHtml += `
-            <div class="d-flex align-items-start gap-2 border-bottom py-2">
-                <div class="avatar-text avatar-xs bg-soft-primary text-primary rounded-circle mt-0.5 flex-shrink-0" style="width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;">${i + 1}</div>
-                <div>
-                    <div class="text-muted fs-12">${text}</div>
-                    <div class="text-muted fs-10 mt-1"><i class="feather-clock me-1"></i>${timestamp}</div>
-                </div>
-            </div>`;
-    }
-    $('#taskNotesListContainer').html(notesHtml);
-    
-    // Set the click event handler on the Add Note button dynamically
-    $('#addTaskNoteBtn').off('click').on('click', function() {
-        addTaskNote(title);
-    });
-    
-    $('#taskNotesModal').modal('show');
-}
+function taskRowCells(task) {
+    const completed = task.status === 'Completed';
+    const taskNotes = task.notes || [];
+    const notes = encodeURIComponent(JSON.stringify(taskNotes));
+    const title = escapeHtml(task.title);
+    const clientName = escapeHtml(task.client_name || 'General Client');
+    const taskId = Number(task.id);
+    const noteCount = taskNotes.length;
+    const latestNote = taskNotes[0]?.note || '';
+    const time = task.due_time ? `<br><small class="text-primary"><i class="feather-clock"></i> ${formatTaskTime(task.due_time)}</small>` : '';
 
-function addTaskNote(title) {
-    const noteText = $('#newTaskNoteInput').val().trim();
-    if (!noteText) return;
-    
-    if (!taskNotes[title]) {
-        taskNotes[title] = [];
-    }
-    const timestamp = getCurrentDateTimeString();
-    taskNotes[title].push({ text: noteText, timestamp: timestamp });
-    localStorage.setItem('ss_task_notes', JSON.stringify(taskNotes));
-    
-    // Re-render notes list (recent on top)
-    let notesHtml = '';
-    const totalNotes = taskNotes[title].length;
-    for (let i = totalNotes - 1; i >= 0; i--) {
-        const note = taskNotes[title][i];
-        const text = typeof note === 'string' ? note : note.text;
-        const ts = typeof note === 'string' ? '18 Aug 2026, 09:00 AM' : note.timestamp;
-        notesHtml += `
-            <div class="d-flex align-items-start gap-2 border-bottom py-2">
-                <div class="avatar-text avatar-xs bg-soft-primary text-primary rounded-circle mt-0.5 flex-shrink-0" style="width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;">${i + 1}</div>
-                <div>
-                    <div class="text-muted fs-12">${text}</div>
-                    <div class="text-muted fs-10 mt-1"><i class="feather-clock me-1"></i>${ts}</div>
-                </div>
-            </div>`;
-    }
-    $('#taskNotesListContainer').html(notesHtml);
-    $('#newTaskNoteInput').val('');
-}
-
-function toggleTaskStatus(taskId) {
-    tasksList.forEach(function(t) {
-        if (t.id === taskId) {
-            t.status = (t.status === 'Completed') ? 'Pending' : 'Completed';
-        }
-    });
-    localStorage.setItem('ss_tasks', JSON.stringify(tasksList));
-    renderTasksTable();
-}
-
-function deleteTask(taskId) {
-    if (confirm("Are you sure you want to delete this task?")) {
-        tasksList = tasksList.filter(t => t.id !== taskId);
-        localStorage.setItem('ss_tasks', JSON.stringify(tasksList));
-        renderTasksTable();
-    }
-}
-
-function renderTasksTable() {
-    if (!tasksDataTable) return;
-    tasksDataTable.clear();
-    tasksList.forEach(function(task) {
-        const priorityBadge = task.priority === 'High' ? '<span class="badge bg-soft-danger text-danger fs-11">High</span>' : '<span class="badge bg-soft-primary text-primary fs-11">Medium</span>';
-        
-        let statusBadge = '';
-        let toggleLabel = '';
-        let toggleIcon = '';
-        if (task.status === 'Completed') {
-            statusBadge = `<span class="badge bg-soft-success text-success fs-11" id="${task.id}">Completed</span>`;
-            toggleLabel = 'Mark as Pending';
-            toggleIcon = 'feather-clock text-warning';
-        } else {
-            statusBadge = `<span class="badge bg-soft-warning text-warning fs-11" id="${task.id}">Pending</span>`;
-            toggleLabel = 'Mark as Completed';
-            toggleIcon = 'feather-check-circle text-success';
-        }
-
-        const actionBtn = `
-        <div class="text-center">
-            <div class="action-kebab-wrapper">
-                <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                <div class="action-kebab-dropdown">
-                    <a href="javascript:void(0);" class="action-kebab-item" onclick="toggleTaskStatus('${task.id}')"><i class="${toggleIcon} me-1"></i> ${toggleLabel}</a>
-                    <a href="javascript:void(0);" class="action-kebab-item" onclick="openTaskNotesModal('${task.title.replace(/'/g, "\\'")}', '${task.client.replace(/'/g, "\\'")}')"><i class="feather-file-text text-primary me-1"></i> Task Notes</a>
-                    <a href="javascript:void(0);" class="action-kebab-item" onclick="deleteTask('${task.id}')"><i class="feather-trash-2 text-danger me-1"></i> Delete Task</a>
-                </div>
+    return [
+        `<span class="fs-13 text-muted">${clientName}</span>`,
+        `<span class="fw-bold text-dark fs-13"><i class="feather-check-circle text-primary me-2"></i> ${title}</span>
+            <div class="mt-1 task-note-preview-container ${noteCount ? '' : 'd-none'}">
+                <a href="javascript:void(0);" class="task-notes-btn text-decoration-none" data-task-id="${taskId}" data-title="${title}" data-client-name="${clientName}" data-notes="${notes}" data-due="${formatTaskDate(task.due_date)}${task.due_time ? ' at ' + formatTaskTime(task.due_time) : ''}" data-status="${escapeHtml(task.status)}">
+                    <span class="badge bg-soft-primary text-primary fs-11"><i class="feather-message-square me-1"></i><span class="task-note-count">${noteCount} ${noteCount === 1 ? 'note' : 'notes'}</span></span>
+                    <span class="fs-11 text-muted ms-1 task-note-preview">${escapeHtml(latestNote.length > 45 ? `${latestNote.slice(0, 42)}...` : latestNote)}</span>
+                </a>
+            </div>`,
+        `<span class="fs-13 text-muted">${formatTaskDate(task.due_date)}${time}</span>`,
+        `<span class="task-status-cell"><span class="badge ${completed ? 'bg-soft-success text-success' : 'bg-soft-warning text-warning'} fs-11">${completed ? 'Completed' : 'Pending'}</span></span>`,
+        `<div class="text-center"><div class="action-kebab-wrapper">
+            <button class="action-kebab-btn" type="button"><i class="feather-more-vertical"></i></button>
+            <div class="action-kebab-dropdown">
+                <form action="/utilities/tasks/${taskId}/status" method="POST" class="m-0 task-status-form">
+                    <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}"><input type="hidden" name="_method" value="PATCH">
+                    <button type="submit" class="action-kebab-item border-0 bg-transparent text-start w-100 fs-12 fw-semibold py-2"><i class="${completed ? 'feather-clock text-warning' : 'feather-check-circle text-success'} me-2"></i> Mark as ${completed ? 'Pending' : 'Completed'}</button>
+                </form>
+                <button type="button" class="action-kebab-item border-0 bg-transparent text-start w-100 fs-12 fw-semibold py-2 task-notes-btn" data-task-id="${taskId}" data-title="${escapeHtml(task.title)}" data-client-name="${clientName}" data-notes="${notes}" data-due="${formatTaskDate(task.due_date)}${task.due_time ? ' at ' + formatTaskTime(task.due_time) : ''}" data-status="${escapeHtml(task.status)}"><i class="feather-file-text text-primary me-2"></i> Task Notes</button>
+                <form action="/utilities/tasks/${taskId}" method="POST" class="m-0 task-delete-form">
+                    <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}"><input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" class="action-kebab-item border-0 bg-transparent text-start w-100 fs-12 fw-semibold py-2 text-danger"><i class="feather-trash-2 text-danger me-2"></i> Delete Task</button>
+                </form>
             </div>
-        </div>`;
+        </div></div>`
+    ];
+}
 
-        tasksDataTable.row.add([
-            `<span class="fw-bold text-dark fs-13"><i class="feather-check-circle text-primary me-2"></i>${task.title}</span>`,
-            `<span class="fs-13 text-muted">${task.client}</span>`,
-            `<span class="fs-13 text-muted">${task.date}</span>`,
-            priorityBadge,
-            statusBadge,
-            actionBtn
-        ]);
+async function submitAjaxForm(form) {
+    const response = await fetch(form.action, {
+        method: 'POST', body: new FormData(form),
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     });
-    tasksDataTable.draw(false);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'Unable to complete the request.');
+    return data;
+}
+
+function showTaskMessage(message, type = 'success') {
+    let messageElement = document.getElementById('taskAjaxMessage');
+
+    if (!messageElement) {
+        messageElement = document.createElement('div');
+        messageElement.id = 'taskAjaxMessage';
+        const tabs = document.getElementById('taskFilterTabs');
+        tabs?.parentNode.insertBefore(messageElement, tabs);
+    }
+
+    messageElement.className = `alert alert-${type} py-2 px-3 mb-2`;
+    messageElement.textContent = message;
+    messageElement.classList.remove('d-none');
+
+    window.clearTimeout(messageElement.hideTimer);
+    messageElement.hideTimer = window.setTimeout(() => {
+        messageElement.classList.add('d-none');
+    }, 3500);
+}
+
+function closeTaskModal(modalId) {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+
+    const cleanup = () => {
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    };
+
+    modalElement.addEventListener('hidden.bs.modal', cleanup, { once: true });
+    bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+    window.setTimeout(cleanup, 400);
+}
+
+function confirmTaskDeletion() {
+    const modalElement = document.getElementById('globalConfirmModal');
+    const confirmButton = document.getElementById('globalConfirmBtn');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+    document.getElementById('globalConfirmMessage').textContent = 'Delete this task?';
+
+    return new Promise(resolve => {
+        let resolved = false;
+        const finish = confirmed => {
+            if (resolved) return;
+            resolved = true;
+            resolve(confirmed);
+        };
+
+        confirmButton.addEventListener('click', () => {
+            modal.hide();
+            finish(true);
+        }, { once: true });
+        modalElement.addEventListener('hidden.bs.modal', () => finish(false), { once: true });
+        modal.show();
+    });
+}
+
+function renderTaskNotes(notes, searchTerm = '') {
+    if (!notes || !notes.length) {
+        return `
+            <div class="text-center py-5 my-auto">
+                <div class="avatar-text avatar-lg bg-soft-primary text-primary mx-auto mb-3 rounded-circle" style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;">
+                    <i class="feather-file-text fs-24"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">No Notes Added Yet</h6>
+                <p class="text-muted fs-12 mb-0">Use the note composer on the right to add the first update for this task.</p>
+            </div>
+        `;
+    }
+
+    const term = (searchTerm || '').trim().toLowerCase();
+    const filteredNotes = term 
+        ? notes.filter(n => (n.note || '').toLowerCase().includes(term))
+        : notes;
+
+    if (!filteredNotes.length) {
+        return `
+            <div class="text-center py-5 text-muted my-auto">
+                <i class="feather-search fs-24 mb-2 d-block"></i>
+                <span class="fs-13">No notes found matching "<strong>${escapeHtml(searchTerm)}</strong>"</span>
+            </div>
+        `;
+    }
+
+    return filteredNotes.map((note, idx) => {
+        const noteText = note.note || '';
+        const isLeadNote = noteText.includes('Converted from lead note');
+        const isStatusUpdate = noteText.includes('Status updated');
+        
+        let typeBadge = '';
+        let cardBorder = 'border';
+        let iconBg = 'bg-soft-primary text-primary';
+        let iconClass = 'feather-message-square';
+
+        if (isLeadNote) {
+            typeBadge = '<span class="badge bg-soft-purple text-purple fs-11 d-inline-flex align-items-center" style="padding:2px 8px;"><i class="feather-git-pull-request" style="font-size:10px;line-height:1;margin-right:4px;"></i>Lead Note</span>';
+            cardBorder = 'border border-primary-subtle bg-soft-light';
+            iconBg = 'bg-soft-purple text-purple';
+            iconClass = 'feather-git-merge';
+        } else if (isStatusUpdate) {
+            typeBadge = '<span class="badge bg-soft-warning text-warning fs-11 d-inline-flex align-items-center" style="padding:2px 8px;"><i class="feather-refresh-cw" style="font-size:10px;line-height:1;margin-right:4px;"></i>Status Change</span>';
+            iconBg = 'bg-soft-warning text-warning';
+            iconClass = 'feather-check-circle';
+        } else {
+            typeBadge = '<span class="badge bg-soft-info text-info fs-11 d-inline-flex align-items-center" style="padding:2px 8px;"><i class="feather-user" style="font-size:10px;line-height:1;margin-right:4px;"></i>Task Update</span>';
+        }
+
+        const createdAt = note.created_at ? new Date(note.created_at) : new Date();
+        const formattedDate = !isNaN(createdAt.getTime()) 
+            ? createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+            : '';
+        const formattedTime = !isNaN(createdAt.getTime())
+            ? createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })
+            : '';
+
+        let displayText = escapeHtml(noteText);
+
+        return `
+            <div class="shadow-none ${cardBorder} rounded-3 hover-shadow-sm" style="box-sizing:border-box; display:block; width:100%; height:auto; min-height:0; margin:0 0 8px; padding:12px; border:1px solid #e2e8f0 !important; background:#ffffff;">
+                <div class="d-flex align-items-center justify-content-between" style="margin-bottom:6px;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="${iconBg} rounded-circle flex-shrink-0" style="width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;">
+                            <i class="${iconClass}" style="font-size:12px;line-height:1;"></i>
+                        </div>
+                        <span class="fw-bold text-dark fs-12" style="min-width:32px;">#${notes.length - idx}</span>
+                        ${typeBadge}
+                    </div>
+                    <span class="fs-11 text-muted d-flex align-items-center gap-1 flex-shrink-0">
+                        <i class="feather-clock"></i> ${formattedDate}${formattedTime ? ' at ' + formattedTime : ''}
+                    </span>
+                </div>
+                ${displayText ? `
+                    <div class="fs-13 text-dark fw-normal" style="display:block; margin:0; padding:0; text-indent:0; white-space:pre-wrap; line-height:1.3; word-break:break-word;">${displayText}</div>
+                ` : `
+                    <div class="fs-12 text-muted fst-italic" style="display:block; margin:0; padding:0; text-indent:0; line-height:1.3;">(No additional text)</div>
+                `}
+            </div>
+        `;
+    }).join('');
+}
+
+function openTaskNotesModal(taskId, title, clientName, notes, extra = {}) {
+    activeTaskNotes = Array.isArray(notes) ? notes : [];
+    $('#taskNotesTitleHeader').text(title || 'Task Notes');
+    $('#taskNotesClientSpan').text(clientName || 'General Client');
+    $('#taskNotesCountBadge').text(`${activeTaskNotes.length} ${activeTaskNotes.length === 1 ? 'Note' : 'Notes'}`);
+    $('#taskNotesShowingCount').text(`Showing ${activeTaskNotes.length} ${activeTaskNotes.length === 1 ? 'entry' : 'entries'}`);
+    $('#taskNotesSearchInput').val('');
+    $('#newTaskNoteInput').val('');
+
+    if (extra.due) {
+        $('#taskNotesDueSpan').text(extra.due);
+        $('#taskNotesDueWrapper').attr('style', 'display: flex !important;');
+    } else {
+        $('#taskNotesDueWrapper').attr('style', 'display: none !important;');
+    }
+
+    if (extra.status) {
+        const isCompleted = extra.status === 'Completed';
+        $('#taskNotesStatusBadge').html(`<span class="badge ${isCompleted ? 'bg-soft-success text-success' : 'bg-soft-warning text-warning'} fs-11">${extra.status}</span>`);
+        $('#taskNotesStatusWrapper').attr('style', 'display: flex !important;');
+    } else {
+        $('#taskNotesStatusWrapper').attr('style', 'display: none !important;');
+    }
+
+    $('#taskNoteForm').attr('action', `/utilities/tasks/${taskId}/notes`).attr('data-task-id', taskId);
+    $('#taskNotesListContainer').html(renderTaskNotes(activeTaskNotes));
+     const modalDialog = $('#taskNotesModal .modal-dialog');
+    modalDialog.addClass('modal-fullscreen');
+    $('#toggleTaskNotesFullscreenBtn').attr('title', 'Exit Fullscreen')
+        .find('i').removeClass('feather-maximize-2').addClass('feather-minimize-2');
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('taskNotesModal')).show();
+}
+
+function initializeTaskPage() {
+    try {
+        if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#tasksTable')) {
+            tasksDataTable = $('#tasksTable').DataTable({
+                responsive: false,
+                pageLength: 10,
+                order: [[0, 'asc']],
+                orderFixed: { pre: [[0, 'asc']] },
+                language: { search: '_INPUT_', searchPlaceholder: 'Search tasks...' },
+                columnDefs: [{ targets: [4], searchable: false, orderable: false }],
+                drawCallback: function () {
+                    const rows = this.api().rows({ page: 'current' }).nodes().toArray();
+                    const groups = [];
+
+                    rows.forEach(row => {
+                        const clientCell = row.cells[0];
+                        clientCell.rowSpan = 1;
+                        clientCell.style.display = '';
+
+                        const clientName = clientCell.textContent.trim();
+                        const lastGroup = groups[groups.length - 1];
+                        if (lastGroup && lastGroup.name === clientName) {
+                            lastGroup.rows.push(row);
+                        } else {
+                            groups.push({ name: clientName, rows: [row] });
+                        }
+                    });
+
+                    groups.forEach(group => {
+                        if (group.rows.length < 2) return;
+                        group.rows[0].cells[0].rowSpan = group.rows.length;
+                        group.rows.slice(1).forEach(row => {
+                            row.cells[0].style.display = 'none';
+                        });
+                    });
+                }
+            });
+        } else if ($.fn.DataTable) {
+            tasksDataTable = $('#tasksTable').DataTable();
+        }
+    } catch (error) {
+        console.error('Tasks table initialization failed:', error);
+    }
+
+    $('#newTaskForm').on('submit', async function (event) {
+        event.preventDefault();
+        const button = this.querySelector('[type="submit"]');
+        button.disabled = true;
+        try {
+            const data = await submitAjaxForm(this);
+            this.reset();
+            $('#taskClientInput').val(null).trigger('change');
+            closeTaskModal('addTaskModal');
+            if (tasksDataTable) {
+                const row = tasksDataTable.row.add(taskRowCells(data.task)).draw(false).node();
+                row.dataset.taskId = data.task.id;
+            }
+            showTaskMessage(data.message);
+        } catch (error) { showTaskMessage(error.message, 'danger'); } finally { button.disabled = false; }
+    });
+
+    $('#taskNoteForm').on('submit', async function (event) {
+        event.preventDefault();
+        const button = this.querySelector('[type="submit"]');
+        button.disabled = true;
+        try {
+            const data = await submitAjaxForm(this);
+            activeTaskNotes.unshift(data.note);
+            $('#taskNotesCountBadge').text(`${activeTaskNotes.length} ${activeTaskNotes.length === 1 ? 'Note' : 'Notes'}`);
+            $('#taskNotesShowingCount').text(`Showing ${activeTaskNotes.length} ${activeTaskNotes.length === 1 ? 'entry' : 'entries'}`);
+            $('#taskNotesSearchInput').val('');
+            $('#taskNotesListContainer').html(renderTaskNotes(activeTaskNotes));
+
+            const taskId = this.dataset.taskId;
+            document.querySelectorAll(`.task-notes-btn[data-task-id="${taskId}"]`).forEach(btn => {
+                btn.dataset.notes = encodeURIComponent(JSON.stringify(activeTaskNotes));
+                const count = btn.querySelector('.task-note-count');
+                if (count) {
+                    count.textContent = `${activeTaskNotes.length} ${activeTaskNotes.length === 1 ? 'note' : 'notes'}`;
+                }
+                const preview = btn.querySelector('.task-note-preview');
+                if (preview) {
+                    const latestNote = activeTaskNotes[0]?.note || '';
+                    preview.textContent = latestNote.length > 45 ? `${latestNote.slice(0, 42)}...` : latestNote;
+                    btn.closest('.task-note-preview-container')?.classList.remove('d-none');
+                }
+            });
+
+            const container = document.getElementById('taskNotesListContainer');
+            if (container) container.scrollTop = 0;
+            this.reset();
+            showTaskMessage(data.message);
+        } catch (error) { 
+            showTaskMessage(error.message, 'danger'); 
+        } finally { 
+            button.disabled = false; 
+        }
+    });
+
+    $(document).on('click', '.task-notes-btn', function () {
+        let notes = [];
+        try {
+            notes = JSON.parse(decodeURIComponent(this.dataset.notes || '%5B%5D'));
+        } catch (e) {
+            notes = [];
+        }
+        openTaskNotesModal(
+            this.dataset.taskId,
+            this.dataset.title,
+            this.dataset.clientName,
+            notes,
+            {
+                due: this.dataset.due || '',
+                status: this.dataset.status || ''
+            }
+        );
+    });
+
+    $(document).on('input', '#taskNotesSearchInput', function () {
+        const query = this.value;
+        $('#taskNotesListContainer').html(renderTaskNotes(activeTaskNotes, query));
+    });
+
+    $(document).on('keydown', '#newTaskNoteInput', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            $('#taskNoteForm').trigger('submit');
+        }
+    });
+
+    $(document).on('click', '#toggleTaskNotesFullscreenBtn', function (e) {
+        e.preventDefault();
+        const modalDialog = $('#taskNotesModal .modal-dialog');
+        const icon = $(this).find('i');
+        modalDialog.toggleClass('modal-fullscreen');
+        if (modalDialog.hasClass('modal-fullscreen')) {
+            icon.removeClass('feather-maximize-2').addClass('feather-minimize-2');
+            this.setAttribute('title', 'Exit Fullscreen');
+        } else {
+            icon.removeClass('feather-minimize-2').addClass('feather-maximize-2');
+            this.setAttribute('title', 'Toggle Fullscreen');
+        }
+    });
+
+    $(document).on('submit', '.task-status-form', async function (event) {
+        event.preventDefault();
+        const form = this;
+        const rowElement = form.closest('tr');
+        const button = form.querySelector('[type="submit"]');
+        button.disabled = true;
+        try {
+            const data = await submitAjaxForm(form);
+            const row = tasksDataTable.row(rowElement);
+            row.data(taskRowCells(data.task)).draw(false).node().dataset.taskId = data.task.id;
+            showTaskMessage(data.message);
+        } catch (error) { showTaskMessage(error.message, 'danger'); } finally { button.disabled = false; }
+    });
+
+    $(document).on('submit', '.task-delete-form', async function (event) {
+        event.preventDefault();
+        if (!await confirmTaskDeletion()) return;
+        const form = this;
+        const rowElement = form.closest('tr');
+        const button = form.querySelector('[type="submit"]');
+        button.disabled = true;
+        try {
+            const data = await submitAjaxForm(form);
+            tasksDataTable.row(rowElement).remove().draw(false);
+            showTaskMessage(data.message);
+        } catch (error) { showTaskMessage(error.message, 'danger'); button.disabled = false; }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTaskPage);
+} else {
+    initializeTaskPage();
 }
 
 function filterTaskTable(filter) {
-    if (!tasksDataTable) return;
-    if (filter === 'all') {
-        tasksDataTable.search('').columns().search('').draw();
-    } else {
-        tasksDataTable.search(filter).draw();
-    }
-}
-
-function handleAddNewTask() {
-    const title = $('#taskTitleInput').val().trim();
-    const client = $('#taskClientInput').val().trim() || 'General Client';
-    const date = $('#taskDateInput').val() || '18 Aug 2026';
-    const priority = $('#taskPriorityInput').val();
-
-    if (!title) return;
-
-    const randomId = 'task-status-' + Math.floor(Math.random() * 1000);
-
-    const newTask = {
-        title: title,
-        client: client,
-        date: date,
-        priority: priority,
-        status: 'Pending',
-        id: randomId
-    };
-
-    tasksList.push(newTask);
-    localStorage.setItem('ss_tasks', JSON.stringify(tasksList));
-
-    // Initialize notes array for the new task
-    taskNotes[title] = [{ text: 'Task created.', timestamp: getCurrentDateTimeString() }];
-    localStorage.setItem('ss_task_notes', JSON.stringify(taskNotes));
-
-    renderTasksTable();
-
-    $('#newTaskForm')[0].reset();
-    const modalEl = document.getElementById('addTaskModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
-}
-
-$(document).ready(function () {
-    tasksDataTable = $('#tasksTable').DataTable({
-        responsive: true,
-        pageLength: 10,
-        language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search tasks..."
-        }
+    document.querySelectorAll('#taskFilterTabs .nav-link').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
     });
-    
-    // Render all tasks from tasksList
-    renderTasksTable();
-});
+
+    if (!tasksDataTable) return;
+    tasksDataTable.search('').columns().search('');
+    if (filter === 'Completed' || filter === 'Pending') tasksDataTable.column(3).search(filter).draw();
+    else tasksDataTable.draw();
+}
 
 document.getElementById('mobile-collapse')?.addEventListener('click', function () {
     document.getElementById('mainSidebar')?.classList.toggle('mob-navigation-active');

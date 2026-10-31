@@ -511,7 +511,7 @@ a:hover {
     position: absolute;
     top: 100%;
     right: 0;
-    width: 230px;
+    width: 270px;
     background: #ffffff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -585,11 +585,11 @@ a:hover {
 }
 
 .action-kebab-dropdown {
-    position: absolute !important;
-    top: 100% !important;
-    bottom: auto !important;
-    right: 0 !important;
-    left: auto !important;
+    position: absolute;
+    top: 100%;
+    bottom: auto;
+    right: 0;
+    left: auto;
     min-width: 150px !important;
     background: #ffffff !important;
     border: 1px solid var(--color-border) !important;

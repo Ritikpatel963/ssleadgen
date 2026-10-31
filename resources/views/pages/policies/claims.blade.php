@@ -13,7 +13,7 @@
                 <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3 flex-wrap flex-fill">
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search (First, Last Name)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterClientSearch" class="form-control dash-filter-input"
@@ -21,15 +21,15 @@
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Number Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Mobile Number</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterNumberSearch" class="form-control dash-filter-input"
-                                    placeholder="Search by phone number" />
+                                    placeholder="Search by mobile number" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address (Street Address, Pin code, City, Suburb)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterAddressSearch" class="form-control dash-filter-input"
@@ -40,8 +40,7 @@
                             <label class="fs-11 fw-bold text-muted mb-1 d-block">Date of Birth Search</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-calendar"></i>
-                                <input type="text" id="filterDobSearch" class="form-control dash-filter-input"
-                                    placeholder="DD / MM / YYYY" />
+                                <input type="date" id="filterDobSearch" class="form-control dash-filter-input" />
                             </div>
                         </div>
                     </div>
@@ -71,7 +70,7 @@
                         <tbody>
                             <tr>
                                 <td class="fw-bold text-dark fs-13">Kishore Kumar</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
+                                <td class="fs-13 fw-semibold text-dark">AIA Health</td>
                                 <td class="fs-13 text-muted">Redundancy Benefit</td>
                                 <td class="fs-13 text-muted">02/08/2026</td>
                                 <td><span class="badge bg-soft-success text-success fs-11">Approved</span></td>
@@ -81,10 +80,10 @@
                                     <div class="action-kebab-wrapper">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Kishore Kumar', 'AIA Life', 'Redundancy Benefit', '02/08/2026', 'Approved', '18/08/2026', 'Approved / Paid $26000', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Kishore Kumar', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Kishore Kumar', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Kishore Kumar', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Kishore Kumar', 'AIA Health', 'Redundancy Benefit', '02/08/2026', 'Approved', '18/08/2026', 'Approved / Paid $26000', 'Royson Pinto')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Kishore Kumar', 'AIA Health')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Kishore Kumar', 'AIA Health')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Kishore Kumar', 'AIA Health')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
                                         </div>
                                     </div>
                                 </td>
@@ -211,7 +210,7 @@
                             </tr>
                             <tr>
                                 <td class="fw-bold text-dark fs-13">Michael Singh</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
+                                <td class="fs-13 fw-semibold text-dark">AIA Health</td>
                                 <td class="fs-13 text-muted">Specialist Consultation</td>
                                 <td class="fs-13 text-muted">05/08/2026</td>
                                 <td><span class="badge bg-soft-warning text-warning fs-11">Under Assessment</span></td>
@@ -221,10 +220,10 @@
                                     <div class="action-kebab-wrapper">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Michael Singh', 'AIA Life', 'Specialist Consultation', '05/08/2026', 'Under Assessment', '-', 'Awaiting documentation review', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Michael Singh', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Michael Singh', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Michael Singh', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Michael Singh', 'AIA Health', 'Specialist Consultation', '05/08/2026', 'Under Assessment', '-', 'Awaiting documentation review', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Michael Singh', 'AIA Health')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Michael Singh', 'AIA Health')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Michael Singh', 'AIA Health')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
                                         </div>
                                     </div>
                                 </td>
@@ -551,7 +550,7 @@
                             </tr>
                             <tr>
                                 <td class="fw-bold text-dark fs-13">Charlotte Gonzalez</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
+                                <td class="fs-13 fw-semibold text-dark">AIA Health</td>
                                 <td class="fs-13 text-muted">Specialist Consultation</td>
                                 <td class="fs-13 text-muted">05/08/2026</td>
                                 <td><span class="badge bg-soft-danger text-danger fs-11">Declined</span></td>
@@ -561,17 +560,17 @@
                                     <div class="action-kebab-wrapper">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Charlotte Gonzalez', 'AIA Life', 'Specialist Consultation', '05/08/2026', 'Declined', '12/08/2026', 'Declined - Excluded policy clause', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Charlotte Gonzalez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Charlotte Gonzalez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Charlotte Gonzalez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Charlotte Gonzalez', 'AIA Health', 'Specialist Consultation', '05/08/2026', 'Declined', '12/08/2026', 'Declined - Excluded policy clause', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Charlotte Gonzalez', 'AIA Health')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Charlotte Gonzalez', 'AIA Health')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Charlotte Gonzalez', 'AIA Health')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                             <tr>
                                 <td class="fw-bold text-dark fs-13">Matthew Wilson</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
+                                <td class="fs-13 fw-semibold text-dark">AIA Health</td>
                                 <td class="fs-13 text-muted">Medical Surgery</td>
                                 <td class="fs-13 text-muted">05/08/2026</td>
                                 <td><span class="badge bg-soft-danger text-danger fs-11">Declined</span></td>
@@ -581,10 +580,10 @@
                                     <div class="action-kebab-wrapper">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Matthew Wilson', 'AIA Life', 'Medical Surgery', '05/08/2026', 'Declined', '12/08/2026', 'Declined - Excluded policy clause', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Matthew Wilson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Matthew Wilson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Matthew Wilson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Matthew Wilson', 'AIA Health', 'Medical Surgery', '05/08/2026', 'Declined', '12/08/2026', 'Declined - Excluded policy clause', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Matthew Wilson', 'AIA Health')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Matthew Wilson', 'AIA Health')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Matthew Wilson', 'AIA Health')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
                                         </div>
                                     </div>
                                 </td>
@@ -631,7 +630,7 @@
                             </tr>
                             <tr>
                                 <td class="fw-bold text-dark fs-13">Harper Taylor</td>
-                                <td class="fs-13 fw-semibold text-dark">AIA Life</td>
+                                <td class="fs-13 fw-semibold text-dark">AIA Health</td>
                                 <td class="fs-13 text-muted">Specialist Consultation</td>
                                 <td class="fs-13 text-muted">10/08/2026</td>
                                 <td><span class="badge bg-soft-danger text-danger fs-11">Declined</span></td>
@@ -641,10 +640,10 @@
                                     <div class="action-kebab-wrapper">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Harper Taylor', 'AIA Life', 'Specialist Consultation', '10/08/2026', 'Declined', '15/08/2026', 'Declined - Excluded policy clause', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Harper Taylor', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Harper Taylor', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Harper Taylor', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClaimDetails('Harper Taylor', 'AIA Health', 'Specialist Consultation', '10/08/2026', 'Declined', '15/08/2026', 'Declined - Excluded policy clause', 'Sushant Yadav')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Harper Taylor', 'AIA Health')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Harper Taylor', 'AIA Health')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Harper Taylor', 'AIA Health')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
                                         </div>
                                     </div>
                                 </td>
@@ -707,7 +706,7 @@
                                 <input type="text" class="form-control text-primary" id="viewClaimType" readonly>
                             </div>
                             <div class="col-md-6 col-sm-6">
-                                <label class="form-label fw-semibold fs-13 text-dark">Admin (Claim Handler)</label>
+                                <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
                                 <input type="text" class="form-control" id="viewClaimAdmin" readonly>
                             </div>
                         </div>
@@ -785,36 +784,26 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="claimClientSelect" required>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <select class="form-select" id="claimCompanySelect">
-                                        <option value="AIA New Zealand">AIA New Zealand</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="claimCompanySelect" name="company" required>
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description)
-                                        *</label>
+                                        <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="claimTypeInput"
                                         placeholder="e.g. Medical Surgery / Trauma" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Claim Handler)</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
                                     <select class="form-select" id="claimAdminSelect">
                                         <option value="Sushant Yadav">Sushant Yadav</option>
                                         <option value="Royson Pinto">Royson Pinto</option>
@@ -834,7 +823,7 @@
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Update (Status)</label>
-                                    <select class="form-select" id="claimUpdateSelect">
+                                    <select class="form-select" id="claimUpdateSelect" name="claim_update_status">
                                         <option value="Under Assessment">Under Assessment</option>
                                         <option value="Medical Review">Medical Review</option>
                                         <option value="Document Verification">Document Verification</option>
@@ -895,16 +884,21 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Date *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Date <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="reqDateInput" required>
                                 </div>
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <input type="text" class="form-control" id="reqClientNameInput" placeholder="Client Name" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="reqClientNameInput" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <input type="text" class="form-control" id="reqCompanyInput" placeholder="Insurance Company" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="reqCompanyInput" name="company" required>
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -914,37 +908,37 @@
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type *</label>
-                                    <select class="form-select" id="reqTypeSelect" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="reqTypeSelect" name="inforce_request_type" required>
+                                        <option value="" disabled selected>Select Request Type</option>
                                         <option value="LOA">LOA</option>
-                                        <option value="Update Address">Update Address</option>
+                                        <option value="Address update">Address update</option>
                                         <option value="Put the premium on hold">Put the premium on hold</option>
                                         <option value="LOA / Change of Adviser">LOA / Change of Adviser</option>
-                                        <option value="Correctify Name">Correctify Name</option>
-                                        <option value="Premium Deduction of 1 month">Premium Deduction of 1 month</option>
-                                        <option value="Birth Certificate to add name inbuilt cover">Birth Certificate to add name inbuilt cover</option>
+                                        <option value="Name Correction">Name Correction</option>
                                         <option value="Update Payment Details - DD">Update Payment Details - DD</option>
+                                        <option value="MOT">MOT</option>
+                                        <option value="Other">Other</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Process Status</label>
-                                    <select class="form-select" id="reqProcessSelect">
-                                        <option value="Logged">Logged</option>
+                                    <select class="form-select" id="reqProcessSelect" name="inforce_process_status">
+                                        <option value="" disabled selected>Select Process Status</option>
+                                        <option value="Login">Login</option>
                                         <option value="In Processing">In Processing</option>
-                                        <option value="Submitted to Insurer">Submitted to Insurer</option>
                                         <option value="Pending Information">Pending Information</option>
                                         <option value="Completed">Completed</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Process by *</label>
-                                    <select class="form-select" id="reqProcessBySelect" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Process by</label>
+                                    <select class="form-select" id="reqProcessBySelect" name="inforce_process_by">
+                                        <option value="" disabled selected>Select User</option>
                                         <option value="Sushant Yadav">Sushant Yadav</option>
                                         <option value="Royson Pinto">Royson Pinto</option>
-                                        <option value="Operations Team">Operations Team</option>
-                                        <option value="Compliance Officer">Compliance Officer</option>
                                     </select>
                                 </div>
                             </div>
@@ -996,34 +990,24 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="claimClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <select class="form-select" id="claimCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="claimCompanySelect" name="company" required>
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description) *</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description) <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="claimTypeInput" placeholder="e.g. Medical Surgery / Trauma" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Claim Handler)</label>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
                                     <select class="form-select" id="claimAdminSelect">
                                         <option value="Sushant Yadav">Sushant Yadav</option>
                                         <option value="Royson Pinto">Royson Pinto</option>
@@ -1043,7 +1027,7 @@
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Update (Status)</label>
-                                    <select class="form-select" id="claimUpdateSelect">
+                                    <select class="form-select" id="claimUpdateSelect" name="claim_update_status">
                                         <option value="Under Assessment">Under Assessment</option>
                                         <option value="Medical Review">Medical Review</option>
                                         <option value="Document Verification">Document Verification</option>
@@ -1090,27 +1074,17 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="cancClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cancClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Company *</label>
-                                    <select class="form-select" id="cancCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="cancCompanySelect" name="company" required>
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                             </div>
                         </div>
@@ -1169,7 +1143,7 @@
 
 @push('scripts')
     <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/claims.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/claims.js') }}?v={{ filemtime(public_path('assets/js/pages/claims.js')) }}"></script>
 @endpush
 
 @endsection

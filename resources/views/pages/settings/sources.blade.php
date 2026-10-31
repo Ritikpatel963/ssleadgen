@@ -66,7 +66,7 @@
                 <form id="addSourceForm" onsubmit="event.preventDefault(); handleAddNewSource();">
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold fs-13 text-dark">Source Channel Name *</label>
+                            <label class="form-label fw-semibold fs-13 text-dark">Source Channel Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="sourceNameInput" placeholder="e.g. Meta Lead Campaign" required>
                         </div>
                         <div class="mb-3">
@@ -85,7 +85,7 @@
 
 @push('scripts')
     <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/settings-sources.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/settings-sources.js') }}?v={{ filemtime(public_path('assets/js/pages/settings-sources.js')) }}"></script>
 @endpush
 
 @endsection

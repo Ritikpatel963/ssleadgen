@@ -18,22 +18,20 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold fs-13 text-dark">First Name *</label>
-                            <input type="text" name="first_name" class="form-control" required placeholder="e.g. Jason" value="{{ old('first_name') }}">
+                            <label class="form-label fw-semibold fs-13 text-dark">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control" required placeholder="e.g. Jason" value="{{ old('first_name') }}" maxlength="50">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold fs-13 text-dark">Last Name *</label>
-                            <input type="text" name="last_name" class="form-control" required placeholder="e.g. Taylor" value="{{ old('last_name') }}">
+                            <label class="form-label fw-semibold fs-13 text-dark">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control" required placeholder="e.g. Taylor" value="{{ old('last_name') }}" maxlength="50">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold fs-13 text-dark">Email Address *</label>
-                            <input type="email" name="email" class="form-control" placeholder="jason@example.com" value="{{ old('email') }}">
-                            <small class="text-muted">Required if phone is not provided.</small>
+                            <label class="form-label fw-semibold fs-13 text-dark">Email Address</label>
+                            <input type="email" name="email" class="form-control" placeholder="jason@example.com" value="{{ old('email') }}" maxlength="100">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold fs-13 text-dark">Phone Number *</label>
-                            <input type="text" name="phone" class="form-control" placeholder="021 555 9988" value="{{ old('phone') }}">
-                            <small class="text-muted">Required if email is not provided.</small>
+                            <label class="form-label fw-semibold fs-13 text-dark">Phone Number <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" class="form-control" required placeholder="021 555 9988" value="{{ old('phone') }}" maxlength="15">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold fs-13 text-dark">Acquisition Source</label>
@@ -47,6 +45,14 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold fs-13 text-dark">Estimated Cover ($)</label>
                             <input type="number" name="estimated_cover" class="form-control" placeholder="500000" value="{{ old('estimated_cover') }}">
+                        </div>
+                          <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-13 text-dark">Pipeline Stage</label>
+                            <select name="status" class="form-select">
+                                @foreach($pipelineStages as $stage)
+                                    <option value="{{ $stage->stage_key }}" @selected(old('status', 'new') === $stage->stage_key)>{{ $stage->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-12 text-end mt-4">
                             <a href="{{ route('crm.pipeline') }}" class="btn btn-light me-2">Cancel</a>

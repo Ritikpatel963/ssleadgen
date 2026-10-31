@@ -26,7 +26,7 @@ let sourcesDataTable = null;
 
         $(document).ready(function () {
             sourcesDataTable = $('#sourcesSettingTable').DataTable({
-                responsive: true,
+                responsive: false,
                 pageLength: 10,
                 language: {
                     search: "_INPUT_",

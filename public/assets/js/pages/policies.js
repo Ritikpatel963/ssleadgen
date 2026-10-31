@@ -32,8 +32,11 @@ let policyDataTable = null;
 
         $(document).ready(function () {
             policyDataTable = $('#policyDirectoryTable').DataTable({
-                responsive: true,
+                responsive: false,
                 pageLength: 10,
+                paging: false,
+                lengthChange: false,
+                info: false,
                 language: {
                     search: "_INPUT_",
                     searchPlaceholder: "Search policy records..."

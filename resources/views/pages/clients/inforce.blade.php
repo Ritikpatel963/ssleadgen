@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                    <h4 class="fw-bold text-dark mb-1">Inforce Clients Directory (892 Active)</h4>
+                    <h4 class="fw-bold text-dark mb-1">Inforce Clients Directory <span id="inforceClientCount"></span></h4>
                     <p class="text-muted fs-13 mb-0">Clients with active insurance policies currently earning premium
                         trail.</p>
                 </div>
@@ -15,35 +15,34 @@
                 <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3 flex-wrap flex-fill">
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Client Search (First, Last Name)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterClientSearch" class="form-control dash-filter-input"
-                                    placeholder="Search by client name" />
+                                    placeholder="Search by client name" value="{{ request('client_search') }}" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Number Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Mobile Number</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterNumberSearch" class="form-control dash-filter-input"
-                                    placeholder="Search by phone number" />
+                                    placeholder="Search by mobile number" value="{{ request('phone_search') }}" />
                             </div>
                         </div>
                         <div style="min-width: 170px;" class="flex-fill">
-                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address Search</label>
+                            <label class="fs-11 fw-bold text-muted mb-1 d-block">Address (Street Address, Pin code, City, Suburb)</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-search"></i>
                                 <input type="text" id="filterAddressSearch" class="form-control dash-filter-input"
-                                    placeholder="Search by address" />
+                                    placeholder="Search by address" value="{{ request('address_search') }}" />
                             </div>
                         </div>
                         <div style="min-width: 150px;" class="flex-fill">
                             <label class="fs-11 fw-bold text-muted mb-1 d-block">Date of Birth Search</label>
                             <div class="dash-filter-input-group">
                                 <i class="feather-calendar"></i>
-                                <input type="text" id="filterDobSearch" class="form-control dash-filter-input"
-                                    placeholder="DD / MM / YYYY" />
+                                <input type="date" id="filterDobSearch" class="form-control dash-filter-input" value="{{ request('dob_search') }}" />
                             </div>
                         </div>
                     </div>
@@ -58,7 +57,7 @@
             <!-- Table Card -->
             <div class="card-widget">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle w-100" id="inforceClientsTable">
+                    <table class="table table-hover align-middle w-100" id="inforceClientsTable" data-server-paginated data-can-write="{{ auth()->user()->canWrite('clients_inforce') ? '1' : '0' }}" data-is-admin="{{ auth()->user()->isSuperAdmin() ? '1' : '0' }}">
                         <thead>
                             <tr class="fs-12 text-muted text-uppercase fw-semibold" style="background: #F8FAFC;">
                                 <th>Client Name</th>
@@ -67,643 +66,76 @@
                                 <th>Address</th>
                                 <th>Status</th>
                                 <th>Source</th>
-                                <th>Active Policies</th>
-                                <th>Last Contact</th>
+                                <th>Policy Number</th>
+                                <th>Issue Date</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr data-source="Existing Client" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Kishore Kumar</td>
-                                <td class="fs-13 text-muted">021 754 2824</td>
-                                <td class="fs-13 text-muted">01/12/1983</td>
-                                <td class="fs-13 text-muted">Christchurch, NZ</td>
+                            @forelse($clients as $client)
+                            <tr data-source="{{ $client->leadSource->name ?? 'Direct' }}" data-status="Inforce">
+                                <td class="fw-bold text-dark fs-13" data-order="{{ $client->id }}">{{ $client->first_name }} {{ $client->last_name }}</td>
+                                <td class="fs-13 text-muted">{{ $client->phone ?? '-' }}</td>
+                                <td class="fs-13 text-muted">{{ $client->dob?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="fs-13 text-muted">{{ $client->city ?? $client->address ?? '-' }}</td>
                                 <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Existing Client</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">2</td>
-                                <td class="fs-13 text-muted">04 Aug 2026</td>
+                                <td class="fs-13 text-muted">{{ $client->leadSource->name ?? 'Direct' }}</td>
+                                <td class="fs-13 fw-semibold text-dark text-center">{{ $client->policy_no ?: ($client->policies->pluck('policy_number')->filter()->join(', ') ?: '-') }}</td>
+                                <td class="fs-13 text-muted">{{ $client->login_date?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="text-center">
-                                    <div class="action-kebab-wrapper">
+                                    <div class="action-kebab-wrapper"
+                                        data-client-id="{{ $client->id }}"
+                                        data-request-url="{{ route('clients.inforce.requests.store', $client) }}"
+                                        data-client-name="{{ $client->first_name }} {{ $client->last_name }}"
+                                        data-company="{{ $client->company }}"
+                                        data-claim-type="{{ $client->claim_type }}"
+                                        data-claim-admin="{{ $client->claim_admin ?: $client->adviser }}"
+                                        data-canc-admin="{{ $client->canc_admin ?: $client->adviser }}"
+                                        data-npw-admin="{{ $client->npw_admin ?: $client->adviser }}"
+                                        data-adviser="{{ $client->adviser }}"
+                                        data-claim-processed-date="{{ $client->claim_processed_date?->format('Y-m-d') }}"
+                                        data-claim-update-status="{{ $client->claim_update_status }}"
+                                        data-claim-approved-date="{{ $client->claim_approved_date?->format('Y-m-d') }}"
+                                        data-claim-result="{{ $client->claim_result }}"
+                                        data-dob="{{ $client->dob?->format('Y-m-d') }}"
+                                        data-email="{{ $client->email }}"
+                                        data-address="{{ $client->address }}"
+                                        data-suburb="{{ $client->suburb }}"
+                                        data-city="{{ $client->city }}"
+                                        data-post_code="{{ $client->post_code }}"
+                                        data-login-date="{{ $client->login_date?->format('Y-m-d') }}"
+                                        data-anp="{{ $client->anp }}"
+                                        data-outcome="{{ $client->outcome }}"
+                                        data-not-counting="{{ $client->not_counting ? '1' : '0' }}"
+                                        data-compliance-by="{{ $client->compliance_by }}"
+                                        data-roa-due-date="{{ $client->roa_due_date?->format('Y-m-d') }}"
+                                        data-status-compliance="{{ $client->status_compliance }}"
+                                        data-sent-to-client="{{ $client->sent_to_client }}"
+                                        data-policy-no="{{ $client->policy_no ?: ($client->policies->pluck('policy_number')->filter()->join(', ') ?: '-') }}"
+                                        data-phone="{{ $client->phone }}"
+                                        data-first-name="{{ $client->first_name }}"
+                                        data-last-name="{{ $client->last_name }}">
                                         <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
                                         <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Kishore Kumar', '021 754 2824', 'Christchurch, NZ', 'Inforce', '2')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Kishore Kumar', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Kishore Kumar', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Kishore Kumar', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewSharedClientDetailsFromRow(this.closest('.action-kebab-wrapper'))"><i class="feather-eye text-primary me-1"></i> View Profile</a>
+                                            @if(auth()->user()->canWrite('clients_inforce'))
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal(this.closest('.action-kebab-wrapper').dataset.clientName, this.closest('.action-kebab-wrapper').dataset.company, this.closest('.action-kebab-wrapper').dataset.clientId, this.closest('.action-kebab-wrapper').dataset.requestUrl)"><i class="feather-clipboard text-warning me-1"></i> Client Request</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModalFromRow(this.closest('.action-kebab-wrapper'))"><i class="feather-shield text-info me-1"></i> Claim Update</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openInactiveClientModal('{{ addslashes($client->first_name . ' ' . $client->last_name) }}', '{{ addslashes($client->company ?? '') }}', '{{ $client->id }}')"><i class="feather-user-x text-secondary me-1"></i> Inactive Clients</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openNpwDeferredModal('{{ addslashes($client->first_name . ' ' . $client->last_name) }}', '{{ addslashes($client->company ?? '') }}', '{{ $client->id }}', '{{ addslashes($client->npw_admin ?: ($client->adviser ?? '')) }}')"><i class="feather-clock text-purple me-1"></i> NPW Deferred</a>
+                                                <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('{{ addslashes($client->first_name . ' ' . $client->last_name) }}', '{{ addslashes($client->company ?? '') }}', '{{ $client->id }}', '{{ addslashes($client->canc_admin ?: ($client->adviser ?? '')) }}')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
+                                            @endif
+                                            @if(auth()->user()->isSuperAdmin())
+                                                <a href="javascript:void(0);" class="action-kebab-item text-danger" onclick="deleteInforceClient('{{ $client->id }}', '{{ addslashes($client->first_name . ' ' . $client->last_name) }}')"><i class="feather-trash-2 text-danger me-1"></i> Delete Client</a>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                            <tr data-source="Referral" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Suman Pappula</td>
-                                <td class="fs-13 text-muted">021 792 9935</td>
-                                <td class="fs-13 text-muted">03/10/1988</td>
-                                <td class="fs-13 text-muted">Auckland, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Referral</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">07 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Suman Pappula', '021 792 9935', 'Auckland, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Suman Pappula', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Suman Pappula', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Suman Pappula', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Rahul Sharma</td>
-                                <td class="fs-13 text-muted">021 338 9279</td>
-                                <td class="fs-13 text-muted">20/01/1992</td>
-                                <td class="fs-13 text-muted">Christchurch, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">08 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Rahul Sharma', '021 338 9279', 'Christchurch, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Rahul Sharma', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Rahul Sharma', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Rahul Sharma', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Facebook Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Priya Patel</td>
-                                <td class="fs-13 text-muted">021 559 5557</td>
-                                <td class="fs-13 text-muted">26/01/1980</td>
-                                <td class="fs-13 text-muted">Nelson, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Facebook Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">3</td>
-                                <td class="fs-13 text-muted">05 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Priya Patel', '021 559 5557', 'Nelson, NZ', 'Inforce', '3')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Priya Patel', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Priya Patel', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Priya Patel', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Facebook Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Sarah Connor</td>
-                                <td class="fs-13 text-muted">021 320 6514</td>
-                                <td class="fs-13 text-muted">04/02/1987</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Facebook Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">3</td>
-                                <td class="fs-13 text-muted">20 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Sarah Connor', '021 320 6514', 'Hamilton, NZ', 'Inforce', '3')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Sarah Connor', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Sarah Connor', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Sarah Connor', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Google Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Amit Miller</td>
-                                <td class="fs-13 text-muted">021 370 1711</td>
-                                <td class="fs-13 text-muted">24/08/1992</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Google Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">18 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Amit Miller', '021 370 1711', 'Hamilton, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Amit Miller', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Amit Miller', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Amit Miller', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">David Chang</td>
-                                <td class="fs-13 text-muted">021 400 6925</td>
-                                <td class="fs-13 text-muted">19/04/1977</td>
-                                <td class="fs-13 text-muted">Auckland, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">2</td>
-                                <td class="fs-13 text-muted">10 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('David Chang', '021 400 6925', 'Auckland, NZ', 'Inforce', '2')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('David Chang', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('David Chang', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('David Chang', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Google Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Michael Singh</td>
-                                <td class="fs-13 text-muted">021 181 4814</td>
-                                <td class="fs-13 text-muted">28/02/1987</td>
-                                <td class="fs-13 text-muted">Tauranga, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Google Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">3</td>
-                                <td class="fs-13 text-muted">06 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Michael Singh', '021 181 4814', 'Tauranga, NZ', 'Inforce', '3')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Michael Singh', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Michael Singh', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Michael Singh', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Meta Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Aarav Cooper</td>
-                                <td class="fs-13 text-muted">021 479 6820</td>
-                                <td class="fs-13 text-muted">07/11/1983</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Meta Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">2</td>
-                                <td class="fs-13 text-muted">18 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Aarav Cooper', '021 479 6820', 'Hamilton, NZ', 'Inforce', '2')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Aarav Cooper', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Aarav Cooper', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Aarav Cooper', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Vandana Taylor</td>
-                                <td class="fs-13 text-muted">021 846 5010</td>
-                                <td class="fs-13 text-muted">06/08/1987</td>
-                                <td class="fs-13 text-muted">Tauranga, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">2</td>
-                                <td class="fs-13 text-muted">11 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Vandana Taylor', '021 846 5010', 'Tauranga, NZ', 'Inforce', '2')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Vandana Taylor', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Vandana Taylor', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Vandana Taylor', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Facebook Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">James Walker</td>
-                                <td class="fs-13 text-muted">021 963 1916</td>
-                                <td class="fs-13 text-muted">08/01/1985</td>
-                                <td class="fs-13 text-muted">Nelson, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Facebook Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">07 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('James Walker', '021 963 1916', 'Nelson, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('James Walker', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('James Walker', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('James Walker', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Olivia Patel</td>
-                                <td class="fs-13 text-muted">021 680 6155</td>
-                                <td class="fs-13 text-muted">07/11/1990</td>
-                                <td class="fs-13 text-muted">Nelson, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">05 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Olivia Patel', '021 680 6155', 'Nelson, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Olivia Patel', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Olivia Patel', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Olivia Patel', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Ethan Smith</td>
-                                <td class="fs-13 text-muted">021 371 3287</td>
-                                <td class="fs-13 text-muted">08/12/1992</td>
-                                <td class="fs-13 text-muted">Tauranga, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">19 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Ethan Smith', '021 371 3287', 'Tauranga, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Ethan Smith', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Ethan Smith', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Ethan Smith', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Referral" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Arjun Johnson</td>
-                                <td class="fs-13 text-muted">021 508 6930</td>
-                                <td class="fs-13 text-muted">08/03/1991</td>
-                                <td class="fs-13 text-muted">Napier, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Referral</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">04 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Arjun Johnson', '021 508 6930', 'Napier, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Arjun Johnson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Arjun Johnson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Arjun Johnson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Google Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Neha Williams</td>
-                                <td class="fs-13 text-muted">021 256 3621</td>
-                                <td class="fs-13 text-muted">26/11/1988</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Google Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">20 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Neha Williams', '021 256 3621', 'Hamilton, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Neha Williams', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Neha Williams', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Neha Williams', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">John Brown</td>
-                                <td class="fs-13 text-muted">021 579 9669</td>
-                                <td class="fs-13 text-muted">09/09/1975</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">3</td>
-                                <td class="fs-13 text-muted">11 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('John Brown', '021 579 9669', 'Hamilton, NZ', 'Inforce', '3')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('John Brown', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('John Brown', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('John Brown', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Emma Jones</td>
-                                <td class="fs-13 text-muted">021 214 5808</td>
-                                <td class="fs-13 text-muted">14/03/1989</td>
-                                <td class="fs-13 text-muted">Auckland, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">3</td>
-                                <td class="fs-13 text-muted">17 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Emma Jones', '021 214 5808', 'Auckland, NZ', 'Inforce', '3')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Emma Jones', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Emma Jones', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Emma Jones', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Door to Door" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Robert Garcia</td>
-                                <td class="fs-13 text-muted">021 880 3927</td>
-                                <td class="fs-13 text-muted">17/02/1995</td>
-                                <td class="fs-13 text-muted">Tauranga, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Door to Door</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">2</td>
-                                <td class="fs-13 text-muted">05 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Robert Garcia', '021 880 3927', 'Tauranga, NZ', 'Inforce', '2')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Robert Garcia', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Robert Garcia', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Robert Garcia', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Google Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Sophia Miller</td>
-                                <td class="fs-13 text-muted">021 482 3646</td>
-                                <td class="fs-13 text-muted">18/09/1975</td>
-                                <td class="fs-13 text-muted">Dunedin, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Google Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">04 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Sophia Miller', '021 482 3646', 'Dunedin, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Sophia Miller', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Sophia Miller', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Sophia Miller', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Referral" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">William Davis</td>
-                                <td class="fs-13 text-muted">021 471 6038</td>
-                                <td class="fs-13 text-muted">08/01/1982</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Referral</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">03 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('William Davis', '021 471 6038', 'Hamilton, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('William Davis', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('William Davis', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('William Davis', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Meta Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Isabella Rodriguez</td>
-                                <td class="fs-13 text-muted">021 878 9727</td>
-                                <td class="fs-13 text-muted">25/03/1979</td>
-                                <td class="fs-13 text-muted">Napier, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Meta Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">2</td>
-                                <td class="fs-13 text-muted">09 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Isabella Rodriguez', '021 878 9727', 'Napier, NZ', 'Inforce', '2')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Isabella Rodriguez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Isabella Rodriguez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Isabella Rodriguez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Google Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Daniel Martinez</td>
-                                <td class="fs-13 text-muted">021 640 7932</td>
-                                <td class="fs-13 text-muted">07/09/1981</td>
-                                <td class="fs-13 text-muted">Tauranga, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Google Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">3</td>
-                                <td class="fs-13 text-muted">15 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Daniel Martinez', '021 640 7932', 'Tauranga, NZ', 'Inforce', '3')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Daniel Martinez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Daniel Martinez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Daniel Martinez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Facebook Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Mia Hernandez</td>
-                                <td class="fs-13 text-muted">021 629 8397</td>
-                                <td class="fs-13 text-muted">04/04/1982</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Facebook Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">19 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Mia Hernandez', '021 629 8397', 'Hamilton, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Mia Hernandez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Mia Hernandez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Mia Hernandez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Website" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Joseph Lopez</td>
-                                <td class="fs-13 text-muted">021 667 4770</td>
-                                <td class="fs-13 text-muted">19/04/1975</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Website</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">08 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Joseph Lopez', '021 667 4770', 'Hamilton, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Joseph Lopez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Joseph Lopez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Joseph Lopez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Facebook Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Charlotte Gonzalez</td>
-                                <td class="fs-13 text-muted">021 169 1514</td>
-                                <td class="fs-13 text-muted">28/06/1977</td>
-                                <td class="fs-13 text-muted">Christchurch, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Facebook Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">07 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Charlotte Gonzalez', '021 169 1514', 'Christchurch, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Charlotte Gonzalez', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Charlotte Gonzalez', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Charlotte Gonzalez', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Existing Client" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Matthew Wilson</td>
-                                <td class="fs-13 text-muted">021 652 3167</td>
-                                <td class="fs-13 text-muted">24/10/1993</td>
-                                <td class="fs-13 text-muted">Napier, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Existing Client</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">14 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Matthew Wilson', '021 652 3167', 'Napier, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Matthew Wilson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Matthew Wilson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Matthew Wilson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Google Ads" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Amelia Anderson</td>
-                                <td class="fs-13 text-muted">021 294 2545</td>
-                                <td class="fs-13 text-muted">04/11/1988</td>
-                                <td class="fs-13 text-muted">Dunedin, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Google Ads</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">15 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Amelia Anderson', '021 294 2545', 'Dunedin, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Amelia Anderson', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Amelia Anderson', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Amelia Anderson', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Referral" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">David Thomas</td>
-                                <td class="fs-13 text-muted">021 984 1887</td>
-                                <td class="fs-13 text-muted">22/11/1995</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Referral</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">11 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('David Thomas', '021 984 1887', 'Hamilton, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('David Thomas', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('David Thomas', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('David Thomas', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Existing Client" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Harper Taylor</td>
-                                <td class="fs-13 text-muted">021 919 2790</td>
-                                <td class="fs-13 text-muted">08/04/1981</td>
-                                <td class="fs-13 text-muted">Napier, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Existing Client</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">4</td>
-                                <td class="fs-13 text-muted">06 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Harper Taylor', '021 919 2790', 'Napier, NZ', 'Inforce', '4')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Harper Taylor', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Harper Taylor', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Harper Taylor', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-source="Referral" data-status="Inforce">
-                                <td class="fw-bold text-dark fs-13">Andrew Moore</td>
-                                <td class="fs-13 text-muted">021 385 8579</td>
-                                <td class="fs-13 text-muted">08/02/1989</td>
-                                <td class="fs-13 text-muted">Hamilton, NZ</td>
-                                <td><span class="status-pill-inforce">Inforce</span></td>
-                                <td class="fs-13 text-muted">Referral</td>
-                                <td class="fs-13 fw-semibold text-dark text-center">1</td>
-                                <td class="fs-13 text-muted">03 Aug 2026</td>
-                                <td class="text-center">
-                                    <div class="action-kebab-wrapper">
-                                        <button class="action-kebab-btn"><i class="feather-more-vertical"></i></button>
-                                        <div class="action-kebab-dropdown">
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="viewClientDetails('Andrew Moore', '021 385 8579', 'Hamilton, NZ', 'Inforce', '1')"><i class="feather-eye text-primary me-1"></i> View Profile</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClientRequestModal('Andrew Moore', 'AIA Life')"><i class="feather-git-pull-request text-warning me-1"></i> Client Request</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openClaimUpdateModal('Andrew Moore', 'AIA Life')"><i class="feather-shield text-info me-1"></i> Claim Update</a>
-                                            <a href="javascript:void(0);" class="action-kebab-item" onclick="openCancellationUpdateModal('Andrew Moore', 'AIA Life')"><i class="feather-file-minus text-danger me-1"></i> Cancellation update</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-</tbody>
+                            @empty
+                            <tr><td colspan="9" class="text-center text-muted py-4">No inforce clients found.</td></tr>
+                            @endforelse
+                        </tbody>
                     </table>
                 </div>
             
@@ -725,12 +157,12 @@
                     <div class="modal-body p-4">
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold fs-13 text-dark">Client Full Name *</label>
+                                <label class="form-label fw-semibold fs-13 text-dark">Client Full Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="clientNameInput"
                                     placeholder="e.g. Ramesh Patel" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold fs-13 text-dark">Phone Number *</label>
+                                <label class="form-label fw-semibold fs-13 text-dark">Phone Number <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="clientPhoneInput" placeholder="021 XXX XXXX"
                                     required>
                             </div>
@@ -818,18 +250,21 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Date *</label>
-                                    <input type="date" class="form-control" id="reqDateInput" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="reqDateInput" name="inforce_date" required>
                                 </div>
                                 <div class="col-md-4 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <input type="text" class="form-control" id="reqClientNameInput"
-                                        placeholder="Client Name" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="reqClientNameInput" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <input type="text" class="form-control" id="reqCompanyInput"
-                                        placeholder="Insurance Company" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company</label>
+                                    <select class="form-select" id="reqCompanyInput" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -841,18 +276,17 @@
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type *</label>
-                                    <select class="form-select" id="reqTypeSelect" required>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Request Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="reqTypeSelect" name="inforce_request_type" required>
+                                        <option value="" disabled selected>Select Request Type</option>
                                         <option value="LOA">LOA</option>
-                                        <option value="Update Address">Update Address</option>
+                                        <option value="Address update">Address update</option>
                                         <option value="Put the premium on hold">Put the premium on hold</option>
                                         <option value="LOA / Change of Adviser">LOA / Change of Adviser</option>
-                                        <option value="Correctify Name">Correctify Name</option>
-                                        <option value="Premium Deduction of 1 month">Premium Deduction of 1 month
-                                        </option>
-                                        <option value="Birth Certificate to add name inbuilt cover">Birth Certificate to
-                                            add name inbuilt cover</option>
+                                        <option value="Name Correction">Name Correction</option>
                                         <option value="Update Payment Details - DD">Update Payment Details - DD</option>
+                                        <option value="MOT">MOT</option>
+                                        <option value="Other">Other</option>
                                     </select>
                                 </div>
                             </div>
@@ -860,21 +294,21 @@
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Process Status</label>
-                                    <select class="form-select" id="reqProcessSelect">
-                                        <option value="Logged">Logged</option>
+                                    <select class="form-select" id="reqProcessSelect" name="inforce_process_status">
+                                        <option value="" disabled selected>Select Process Status</option>
+                                        <option value="Login">Login</option>
                                         <option value="In Processing">In Processing</option>
-                                        <option value="Submitted to Insurer">Submitted to Insurer</option>
                                         <option value="Pending Information">Pending Information</option>
                                         <option value="Completed">Completed</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Process by *</label>
-                                    <select class="form-select" id="reqProcessBySelect" required>
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
-                                        <option value="Operations Team">Operations Team</option>
-                                        <option value="Compliance Officer">Compliance Officer</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Process by</label>
+                                    <select class="form-select" id="reqProcessBySelect" name="inforce_process_by">
+                                        <option value="" disabled selected>Select User</option>
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -926,7 +360,8 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
-                <form id="lodgeClaimForm" onsubmit="event.preventDefault(); handleAddNewClaim();">
+                <form id="lodgeClaimForm" method="POST" action="" data-action-base="{{ url('/clients/inforce') }}">
+                    @csrf
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -934,39 +369,30 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="claimClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company *</label>
-                                    <select class="form-select" id="claimCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Insurance Company</label>
+                                    <select class="form-select" id="claimCompanySelect" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Claims (Type / Description)
-                                        *</label>
-                                    <input type="text" class="form-control" id="claimTypeInput"
-                                        placeholder="e.g. Medical Surgery / Trauma" required>
+                                        <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="claimTypeInput" name="claim_type"
+                                        placeholder="e.g. Medical Surgery / Trauma" required maxlength="100">
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Claim Handler)</label>
-                                    <select class="form-select" id="claimAdminSelect">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="claimAdminSelect" name="claim_admin">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -979,11 +405,11 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Processed Date</label>
-                                    <input type="date" class="form-control" id="claimProcessedDateInput">
+                                    <input type="date" class="form-control" id="claimProcessedDateInput" name="claim_processed_date">
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Update (Status)</label>
-                                    <select class="form-select" id="claimUpdateSelect">
+                                    <select class="form-select" id="claimUpdateSelect" name="claim_update_status">
                                         <option value="Under Assessment">Under Assessment</option>
                                         <option value="Medical Review">Medical Review</option>
                                         <option value="Document Verification">Document Verification</option>
@@ -993,15 +419,15 @@
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Approved Date</label>
-                                    <input type="date" class="form-control" id="claimApprovedDateInput">
+                                    <input type="date" class="form-control" id="claimApprovedDateInput" name="claim_approved_date">
                                 </div>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Result / Outcome</label>
-                                    <input type="text" class="form-control" id="claimOutcomeInput"
-                                        placeholder="e.g. Approved / Paid $18,500">
+                                    <input type="text" class="form-control" id="claimOutcomeInput" name="claim_result"
+                                        placeholder="e.g. Approved / Paid $18,500" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -1024,7 +450,8 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
-                <form id="addCancellationForm" onsubmit="event.preventDefault(); handleAddNewCancellation();">
+                <form id="addCancellationForm" method="POST" action="" data-action-base="{{ url('/clients/inforce') }}">
+                    @csrf
                     <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                         <div class="modal-section-card">
                             <div class="modal-section-title">
@@ -1032,27 +459,17 @@
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name *</label>
-                                    <select class="form-select" id="cancClientSelect" required>
-                                        <option value="Rahul Sharma">Rahul Sharma</option>
-                                        <option value="Amanda Miller">Amanda Miller</option>
-                                        <option value="Jason Te Kuru">Jason Te Kuru</option>
-                                        <option value="Priya Patel">Priya Patel</option>
-                                        <option value="David Chen">David Chen</option>
-                                        <option value="Kishore Kumar">Kishore Kumar</option>
-                                        <option value="Suman Pappula">Suman Pappula</option>
-                                        <option value="Vandana Singh">Vandana Singh</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cancClientSelect" name="client_name" placeholder="Client Name" required>
                                 </div>
                                 <div class="col-md-6 col-sm-6">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Company *</label>
-                                    <select class="form-select" id="cancCompanySelect">
-                                        <option value="AIA Life">AIA Life</option>
-                                        <option value="Fidelity Life">Fidelity Life</option>
-                                        <option value="Chubb Life">Chubb Life</option>
-                                        <option value="Partners Life">Partners Life</option>
-                                        <option value="Asteron Life">Asteron Life</option>
-                                    </select>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company</label>
+                                    <select class="form-select" id="cancCompanySelect" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+</select>
                                 </div>
                             </div>
                         </div>
@@ -1064,18 +481,18 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Cancellation Sent</label>
-                                    <input type="date" class="form-control" id="cancDateSentInput">
+                                    <input type="date" class="form-control" id="cancDateSentInput" name="canc_date_sent">
                                 </div>
                                 <div class="col-md-4 col-sm-6">
                                     <label class="form-label fw-semibold fs-13 text-dark">Completed</label>
-                                    <input type="text" class="form-control" id="cancCompletedInput"
-                                        placeholder="e.g. 15/08/2026 or Pending">
+                                    <input type="date" class="form-control" id="cancCompletedInput" name="canc_completed_date">
                                 </div>
                                 <div class="col-md-4 col-sm-12">
-                                    <label class="form-label fw-semibold fs-13 text-dark">Admin (Handler)</label>
-                                    <select class="form-select" id="cancAdminSelect">
-                                        <option value="Sushant Yadav">Sushant Yadav</option>
-                                        <option value="Royson Pinto">Royson Pinto</option>
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="cancAdminSelect" name="canc_admin">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -1083,8 +500,8 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Outcome</label>
-                                    <input type="text" class="form-control" id="cancOutcomeInput"
-                                        placeholder="e.g. Cancelled - Premium Cost Concerns">
+                                    <input type="text" class="form-control" id="cancOutcomeInput" name="canc_outcome"
+                                        placeholder="e.g. Cancelled - Premium Cost Concerns" maxlength="255">
                                 </div>
                             </div>
                         </div>
@@ -1096,8 +513,8 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-semibold fs-13 text-dark">Comments</label>
-                                    <textarea class="form-control" id="cancCommentsInput" rows="3"
-                                        placeholder="Enter comments or cancellation reason..."></textarea>
+                                    <textarea class="form-control" id="cancCommentsInput" name="canc_comments" rows="3"
+                                        placeholder="Enter comments or cancellation reason..." maxlength="1000"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1113,10 +530,138 @@
         </div>
     </div>
 
+
+    <!-- Modal: Mark as Inactive -->
+    <div class="modal fade" id="addInactiveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: #0A192F;">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-user-x me-2"></i> Mark Client as Inactive</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addInactiveForm" method="POST" action="" data-action-base="{{ url('/clients/inforce') }}">
+                    @csrf
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3 text-secondary" style="font-size: 3rem;">
+                            <i class="feather-alert-circle"></i>
+                        </div>
+                        <h4 class="mb-3 text-dark fw-bold">Are you sure?</h4>
+                        <p class="text-muted fs-14">
+                            You are about to move <strong id="inactiveClientNameDisplay"></strong> to the Inactive Clients directory.
+                        </p>
+                    </div>
+                    <div class="modal-footer bg-light justify-content-center">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn px-4 fw-bold text-white" style="background-color: #00A8B5; border-color: #00A8B5;" onmouseover="this.style.backgroundColor='#008C97'" onmouseout="this.style.backgroundColor='#00A8B5'">Update Inactive Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: NPW Deferred Popup -->
+    <div class="modal fade" id="addNpwModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-clock me-2"></i> <span id="npwModalTitle">NPW Deferred</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addNpwForm" method="POST" action="" data-action-base="{{ url('/clients/inforce') }}" onsubmit="return true;">
+                    @csrf
+                    <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+                        <div class="modal-section-card">
+                            <div class="modal-section-title">
+                                <i class="feather-user text-primary fs-15"></i> 1. Client & Insurance Provider
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Client Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="npwClientNameDisplay" name="client_name" placeholder="Client Name" required>
+                                </div>
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Company</label>
+                                    <select class="form-select" id="npwCompanyDisplay" name="company">
+                                        <option value="" selected disabled>Select Company</option>
+                                        @foreach($insuranceCompanies as $company)
+                                            <option value="{{ $company->name }}">{{ $company->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-section-card">
+                            <div class="modal-section-title">
+                                <i class="feather-file-text text-primary fs-15"></i> 2. Policy & Admin Details
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Expected Issue Date <span class="text-danger"></span></label>
+                                    <input type="date" class="form-control" id="npwIssueDateInput" name="npw_issue_date">
+                                </div>
+                                <div class="col-md-6 col-sm-6">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Expected Premium ($) <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" id="npwPremiumInput" name="npw_premium" placeholder="e.g. 1500.00" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Assigned Advisor</label>
+                                    <select class="form-select" id="npwAdminSelect">
+                                        @foreach($advisers as $advisorName)
+                                            <option value="{{ $advisorName }}">{{ $advisorName }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-section-card mb-0">
+                            <div class="modal-section-title">
+                                <i class="feather-message-square text-primary fs-15"></i> 3. Internal Notes & Next Steps
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold fs-13 text-dark">Comments / Reason for Deferral</label>
+                                    <textarea class="form-control" id="npwNotesCommentsInput" rows="3" placeholder="Add any specific context here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">Save NPW Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="alreadyInforceClientModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: var(--color-navy-dark);">
+                    <h5 class="modal-title text-white mb-0"><i class="feather-check-circle me-2"></i> Inforce Client</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="text-success mb-3" style="font-size: 2.5rem;"><i class="feather-check-circle"></i></div>
+                    <h5 class="fw-bold text-dark mb-2" id="alreadyInforceClientName"></h5>
+                    <p class="text-muted mb-2" id="alreadyInforceClientCompany"></p>
+                    <span class="badge bg-soft-success text-success fs-12 px-3 py-2">Already in Inforce Clients</span>
+                </div>
+                <div class="modal-footer bg-light justify-content-center">
+                    <button type="button" class="btn btn-primary btn-sm px-4" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@include('pages.auth.partials.client-details-modal')
+@include('pages.clients.partials.client-request-modal')
 @push('scripts')
-    <script src="{{ asset('assets/js/pages/clients-login.js') }}"></script>
-    <script src="{{ asset('assets/js/dashboard-redesign.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/clients-inforce.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/clients-login.js') }}?v={{ filemtime(public_path('assets/js/pages/clients-login.js')) }}"></script>
+    <script src="{{ asset('assets/js/pages/clients-inforce.js') }}?v={{ filemtime(public_path('assets/js/pages/clients-inforce.js')) }}"></script>
 @endpush
 
 @endsection
+
+

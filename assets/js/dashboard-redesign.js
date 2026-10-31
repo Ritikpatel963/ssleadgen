@@ -150,6 +150,61 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (recentClientsDataTable) {
                 recentClientsDataTable.search(searchTerm).draw();
+                
+                if (searchTerm !== '') {
+                    const filteredRows = recentClientsDataTable.rows({ search: 'applied' }).nodes();
+                    if (filteredRows.length > 0) {
+                        let popupHtml = `<div class="table-responsive mt-3">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr class="fs-12 text-muted text-uppercase">
+                                        <th>Client Name</th>
+                                        <th>Mobile Number</th>
+                                        <th>Email ID</th>
+                                        <th>Address</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                        let displayCount = Math.min(filteredRows.length, 5);
+                        for(let i=0; i<displayCount; i++) {
+                            const row = filteredRows[i];
+                            const name = row.cells[0].innerText.trim();
+                            const phone = row.cells[1].innerText.trim();
+                            const email = row.getAttribute('data-email') || '-';
+                            const address = row.getAttribute('data-address') || '-';
+                            const stage = row.getAttribute('data-status') || 'Unknown';
+
+                            popupHtml += `<tr>
+                                <td class="fw-bold">${escapeHtml(name)}</td>
+                                <td>${escapeHtml(phone)}</td>
+                                <td>${escapeHtml(email)}</td>
+                                <td>${escapeHtml(address)}</td>
+                                <td><span class="badge bg-info rounded-pill">${escapeHtml(stage)}</span></td>
+                            </tr>`;
+                        }
+                        popupHtml += `</tbody></table></div>`;
+                        if (filteredRows.length > 5) {
+                            popupHtml += `<div class="text-center text-muted fs-12 mt-2">Showing 5 of ${filteredRows.length} results</div>`;
+                        }
+                        
+                        const modalEl = document.getElementById('dashboardSearchModal');
+                        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        document.getElementById('dashboardSearchModalBody').innerHTML = popupHtml;
+                        modal.show();
+                    } else {
+                        const modalEl = document.getElementById('dashboardSearchModal');
+                        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        document.getElementById('dashboardSearchModalBody').innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="feather-info text-muted fs-1 mb-3"></i>
+                                <h5 class="fw-bold text-dark">No Results Found</h5>
+                                <p class="text-muted mb-0">We could not find any leads matching your search criteria.</p>
+                            </div>
+                        `;
+                        modal.show();
+                    }
+                }
             }
 
             btnSearch.classList.add('btn-success');

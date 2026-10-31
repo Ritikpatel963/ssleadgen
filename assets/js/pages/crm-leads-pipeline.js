@@ -78,15 +78,30 @@ try {
     leadNotes = defaultLeadNotes;
 }
 
-function addLeadNote(leadName) {
+async function addLeadNote(leadName, leadId) {
     const noteText = $('#newLeadNoteInput').val().trim();
     if (!noteText) return;
-    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const response = await fetch(`/crm/leads/${leadId}/notes`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({ note: noteText }),
+    });
+
+    if (!response.ok) {
+        alert('Unable to save the lead note.');
+        return;
+    }
+
+    const result = await response.json();
     if (!leadNotes[leadName]) {
         leadNotes[leadName] = [];
     }
-    const timestamp = getCurrentDateTimeString();
-    leadNotes[leadName].push({ text: noteText, timestamp: timestamp });
+    leadNotes[leadName].push(result.note);
     localStorage.setItem('ss_lead_notes', JSON.stringify(leadNotes));
     
     // Re-render notes (recent on top)
@@ -160,9 +175,22 @@ function convertNoteToTask(leadName, noteIndex) {
     alert(`Successfully converted note to a task for "${leadName}"! It has been added to Tasks.`);
 }
 
-function openLeadDetailModal(name, phone, email, source, cover, stage, advisor, notes) {
-    if (!leadNotes[name]) {
-        leadNotes[name] = [{ text: notes || 'Newly added prospect lead.', timestamp: getCurrentDateTimeString() }];
+function openLeadDetailModal(name, phone, email, source, cover, stage, advisor, notes, leadId) {
+    const convertForm = document.getElementById('leadConvertForm');
+    if (convertForm && leadId) {
+        convertForm.action = `/crm/leads/${leadId}/convert`;
+    }
+    let databaseNotes = [];
+    try {
+        databaseNotes = JSON.parse(notes || '[]');
+    } catch (e) {
+        databaseNotes = notes ? [{ text: notes, timestamp: '' }] : [];
+    }
+
+    if (databaseNotes.length) {
+        leadNotes[name] = databaseNotes;
+    } else if (!leadNotes[name]) {
+        leadNotes[name] = [{ text: 'Newly added prospect lead.', timestamp: getCurrentDateTimeString() }];
         localStorage.setItem('ss_lead_notes', JSON.stringify(leadNotes));
     }
 
@@ -218,7 +246,7 @@ function openLeadDetailModal(name, phone, email, source, cover, stage, advisor, 
             </div>
             <div class="d-flex flex-column gap-2 mt-2 pt-2 border-top">
                 <textarea id="newLeadNoteInput" class="form-control fs-12" placeholder="Write a new note..." rows="2"></textarea>
-                <button class="btn btn-primary btn-sm align-self-end fw-bold px-3 py-1.5" onclick="addLeadNote('${name.replace(/'/g, "\\'")}')" type="button"><i class="feather-plus me-1"></i> Add Note</button>
+                <button class="btn btn-primary btn-sm align-self-end fw-bold px-3 py-1.5" onclick="addLeadNote('${name.replace(/'/g, "\\'")}', ${leadId || 0})" type="button"><i class="feather-plus me-1"></i> Add Note</button>
             </div>
         </div>
 
@@ -232,6 +260,22 @@ function openLeadDetailModal(name, phone, email, source, cover, stage, advisor, 
         </div>
     `);
     $('#leadDetailModal').modal('show');
+}
+
+function openLeadConvertModal() {
+    const name = $('#leadDetailModalTitle').text().replace('Prospect Lead Overview: ', '').trim();
+    $('#leadConvertConfirmName').text(name ? `Lead: ${name}` : '');
+
+    const modalEl = document.getElementById('leadConvertConfirmModal');
+    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+function confirmLeadConversion() {
+    const confirmModalEl = document.getElementById('leadConvertConfirmModal');
+    const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
+    if (confirmModal) confirmModal.hide();
+    document.getElementById('leadConvertForm').submit();
 }
 
 function switchLeadView(viewMode, btn) {
@@ -252,7 +296,7 @@ function handleAddNewLead() {
     const lastName = $('#loginLastNameInput').val().trim();
     const fullName = (firstName + ' ' + lastName).trim() || 'New Client Lead';
     const policyNo = $('#loginPolicyNoInput').val().trim() || 'POL-2026-NEW';
-    const company = $('#loginCompanyInput').val() || 'AIA Life';
+    const company = $('#loginCompanyInput').val() || 'AIA Health';
     const mobile = $('#loginMobileInput').val().trim() || '021 XXX XXXX';
     const email = $('#loginEmailInput').val().trim() || 'client@example.com';
     const anp = $('#loginAnpInput').val() || '3500';
