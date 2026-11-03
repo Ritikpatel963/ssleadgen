@@ -7,7 +7,7 @@
                 <h5 class="modal-title text-white mb-0"><i class="feather-edit me-2"></i> Edit Client Profile - <span id="editClientNameHeader"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editClientForm" method="POST" action="" onsubmit="handleEditClientSubmit(event)">
+            <form id="editClientForm" class="d-flex flex-column flex-grow-1 overflow-hidden" method="POST" action="" onsubmit="handleEditClientSubmit(event)">
                 @csrf
                 <input type="hidden" name="_method" value="PATCH">
                 <input type="hidden" name="client_id" id="editClientId" value="">

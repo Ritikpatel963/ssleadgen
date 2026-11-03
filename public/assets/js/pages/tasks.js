@@ -164,26 +164,6 @@ function renderTaskNotes(notes, searchTerm = '') {
 
     return filteredNotes.map((note, idx) => {
         const noteText = note.note || '';
-        const isLeadNote = noteText.includes('Converted from lead note');
-        const isStatusUpdate = noteText.includes('Status updated');
-        
-        let typeBadge = '';
-        let cardBorder = 'border';
-        let iconBg = 'bg-soft-primary text-primary';
-        let iconClass = 'feather-message-square';
-
-        if (isLeadNote) {
-            typeBadge = '<span class="badge bg-soft-purple text-purple fs-11 d-inline-flex align-items-center" style="padding:2px 8px;"><i class="feather-git-pull-request" style="font-size:10px;line-height:1;margin-right:4px;"></i>Lead Note</span>';
-            cardBorder = 'border border-primary-subtle bg-soft-light';
-            iconBg = 'bg-soft-purple text-purple';
-            iconClass = 'feather-git-merge';
-        } else if (isStatusUpdate) {
-            typeBadge = '<span class="badge bg-soft-warning text-warning fs-11 d-inline-flex align-items-center" style="padding:2px 8px;"><i class="feather-refresh-cw" style="font-size:10px;line-height:1;margin-right:4px;"></i>Status Change</span>';
-            iconBg = 'bg-soft-warning text-warning';
-            iconClass = 'feather-check-circle';
-        } else {
-            typeBadge = '<span class="badge bg-soft-info text-info fs-11 d-inline-flex align-items-center" style="padding:2px 8px;"><i class="feather-user" style="font-size:10px;line-height:1;margin-right:4px;"></i>Task Update</span>';
-        }
 
         const createdAt = note.created_at ? new Date(note.created_at) : new Date();
         const formattedDate = !isNaN(createdAt.getTime()) 
@@ -196,24 +176,13 @@ function renderTaskNotes(notes, searchTerm = '') {
         let displayText = escapeHtml(noteText);
 
         return `
-            <div class="shadow-none ${cardBorder} rounded-3 hover-shadow-sm" style="box-sizing:border-box; display:block; width:100%; height:auto; min-height:0; margin:0 0 8px; padding:12px; border:1px solid #e2e8f0 !important; background:#ffffff;">
-                <div class="d-flex align-items-center justify-content-between" style="margin-bottom:6px;">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="${iconBg} rounded-circle flex-shrink-0" style="width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;">
-                            <i class="${iconClass}" style="font-size:12px;line-height:1;"></i>
-                        </div>
-                        <span class="fw-bold text-dark fs-12" style="min-width:32px;">#${notes.length - idx}</span>
-                        ${typeBadge}
-                    </div>
-                    <span class="fs-11 text-muted d-flex align-items-center gap-1 flex-shrink-0">
+            <div class="p-3 ${idx > 0 ? 'border-top' : ''}">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="fs-13 text-dark text-start fw-normal flex-grow-1" style="white-space:pre-wrap; line-height:1.6; word-break:break-word;"><span class="fw-bold text-dark">${notes.length - idx}.</span> ${displayText || '<span class="text-muted fst-italic">(No additional text)</span>'}</div>
+                    <div class="fs-11 text-muted d-flex align-items-center gap-1 flex-shrink-0">
                         <i class="feather-clock"></i> ${formattedDate}${formattedTime ? ' at ' + formattedTime : ''}
-                    </span>
+                    </div>
                 </div>
-                ${displayText ? `
-                    <div class="fs-13 text-dark fw-normal" style="display:block; margin:0; padding:0; text-indent:0; white-space:pre-wrap; line-height:1.3; word-break:break-word;">${displayText}</div>
-                ` : `
-                    <div class="fs-12 text-muted fst-italic" style="display:block; margin:0; padding:0; text-indent:0; line-height:1.3;">(No additional text)</div>
-                `}
             </div>
         `;
     }).join('');

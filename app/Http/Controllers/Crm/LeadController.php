@@ -9,10 +9,13 @@ use App\Models\Client;
 use App\Models\Lead;
 use App\Models\LeadSource;
 use App\Models\LookupValue;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LeadController extends Controller
@@ -395,23 +398,37 @@ class LeadController extends Controller
             'note' => 'required|string|max:5000',
         ]);
 
-        $notes = json_decode($lead->notes ?? '[]', true);
-        if (! is_array($notes)) {
-            $notes = $lead->notes ? [['text' => $lead->notes, 'timestamp' => $lead->updated_at?->format('d M Y, h:i A')]] : [];
-        }
+        return DB::transaction(function () use ($validated, $lead): JsonResponse {
+            $notes = json_decode($lead->notes ?? '[]', true);
+            if (! is_array($notes)) {
+                $notes = $lead->notes ? [['text' => $lead->notes, 'timestamp' => $lead->updated_at?->format('d M Y, h:i A')]] : [];
+            }
 
-        $notes[] = [
-            'text' => $validated['note'],
-            'timestamp' => Carbon::now()->format('d M Y, h:i A'),
-        ];
+            $now = Carbon::now();
+            $clientName = trim($lead->first_name . ' ' . $lead->last_name);
+            $task = Task::create([
+                'title' => 'Follow up: ' . Str::limit($validated['note'], 244, ''),
+                'client_name' => $clientName,
+                'due_date' => $now->toDateString(),
+                'priority' => 'High',
+            ]);
+            $task->notes()->create(['note' => $validated['note']]);
 
-        $lead->update(['notes' => json_encode($notes)]);
+            $newNote = [
+                'text' => $validated['note'],
+                'timestamp' => $now->format('d M Y, h:i A'),
+                'task_id' => $task->id,
+            ];
+            $notes[] = $newNote;
 
-        return response()->json([
-            'success' => true,
-            'note' => end($notes),
-        ]);
+            $lead->update(['notes' => json_encode($notes)]);
+
+            return response()->json([
+                'success' => true,
+                'note' => $newNote,
+                'task' => $task->load('notes'),
+            ]);
+        });
     }
 }
-
 

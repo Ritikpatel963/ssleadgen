@@ -231,7 +231,7 @@
                             </h6>
                             <span class="fs-12 text-muted fw-medium badge bg-light text-dark border" id="taskNotesShowingCount">Showing 0 entries</span>
                         </div>
-                         <div id="taskNotesListContainer" class="task-notes-scroll-container pe-1 mb-3">
+                         <div id="taskNotesListContainer" class="task-notes-scroll-container border rounded-3 bg-white pe-1 mb-3">
                             <!-- Notes loaded dynamically -->
                         </div>
 

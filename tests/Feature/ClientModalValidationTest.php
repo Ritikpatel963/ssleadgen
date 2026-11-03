@@ -6,7 +6,9 @@ use App\Http\Middleware\RequirePermission;
 use App\Http\Controllers\Crm\ClientController;
 use App\Models\Client;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -20,6 +22,86 @@ class ClientModalValidationTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['first_name', 'last_name', 'phone'])
             ->assertJsonMissingValidationErrors(['email']);
+    }
+
+    public function test_login_client_records_with_duplicate_policy_phone_and_email_are_saved_and_listed(): void
+    {
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+            $table->boolean('is_super_admin')->default(false);
+        });
+
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('role_id')->nullable();
+        });
+
+        Schema::create('lead_sources', function (Blueprint $table) {
+            $table->id();
+        });
+
+        Schema::create('policies', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('client_id');
+        });
+
+        Schema::create('clients', function (Blueprint $table) {
+            $table->id();
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('phone');
+            $table->string('email')->nullable();
+            $table->string('policy_no')->nullable();
+            $table->string('company')->nullable();
+            $table->string('address')->nullable();
+            $table->string('suburb')->nullable();
+            $table->string('city')->nullable();
+            $table->string('post_code')->nullable();
+            $table->date('dob')->nullable();
+            $table->date('login_date')->nullable();
+            $table->decimal('anp', 10, 2)->nullable();
+            $table->string('outcome')->nullable();
+            $table->string('adviser')->nullable();
+            $table->boolean('not_counting')->default(false);
+            $table->string('compliance_by')->nullable();
+            $table->date('roa_due_date')->nullable();
+            $table->string('status_compliance')->nullable();
+            $table->string('sent_to_client')->nullable();
+            $table->string('claim_admin')->nullable();
+            $table->string('npw_admin')->nullable();
+            $table->string('canc_admin')->nullable();
+            $table->string('status');
+            $table->timestamps();
+        });
+
+        $this->withoutMiddleware(RequirePermission::class)
+            ->actingAs(new User(['status' => 'active']));
+
+        $clientDetails = [
+            'policy_no' => 'DUPLICATE-POLICY',
+            'first_name' => 'Taylor',
+            'last_name' => 'Example',
+            'phone' => '021123456',
+            'email' => 'taylor@example.com',
+        ];
+
+        $this->post(route('clients.login.store'), $clientDetails, ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $this->post(route('clients.login.store'), $clientDetails, ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseCount('clients', 2);
+
+        $this->post(route('clients.login.data'), [
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('recordsTotal', 2)
+            ->assertJsonCount(2, 'data');
     }
 
     public function test_inforce_request_requires_its_starred_date_on_the_server(): void
