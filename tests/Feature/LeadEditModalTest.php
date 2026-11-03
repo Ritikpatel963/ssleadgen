@@ -19,6 +19,8 @@ class LeadEditModalTest extends TestCase
         parent::setUp();
 
         Schema::dropIfExists('leads');
+        Schema::dropIfExists('task_notes');
+        Schema::dropIfExists('tasks');
         Schema::dropIfExists('lead_sources');
         Schema::dropIfExists('lookup_values');
         Schema::dropIfExists('users');
@@ -104,6 +106,24 @@ class LeadEditModalTest extends TestCase
             $table->string('status_compliance')->nullable();
             $table->string('sent_to_client')->nullable();
             $table->string('outcome')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('tasks', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->string('client_name')->nullable();
+            $table->date('due_date');
+            $table->time('due_time')->nullable();
+            $table->string('priority')->default('Medium');
+            $table->string('status')->default('Pending');
+            $table->timestamps();
+        });
+
+        Schema::create('task_notes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('task_id')->constrained()->cascadeOnDelete();
+            $table->text('note');
             $table->timestamps();
         });
     }
@@ -272,5 +292,41 @@ class LeadEditModalTest extends TestCase
             ->assertSee('editLeadFromDetailModal()', false)
             ->assertSee('openEditLeadModal(' . $lead->id . ')', false)
             ->assertSee('Update Lead Record', false);
+    }
+
+    public function test_adding_a_lead_note_creates_a_follow_up_task_with_the_note(): void
+    {
+        $lead = Lead::create([
+            'first_name' => 'Gaurav',
+            'last_name' => 'Tokarkar',
+            'status' => 'new',
+        ]);
+        $admin = new User(['status' => 'active']);
+
+        $response = $this->withoutMiddleware(RequirePermission::class)
+            ->actingAs($admin)
+            ->postJson(route('crm.leads.notes.store', $lead), ['note' => 'Call me after a month']);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('note.text', 'Call me after a month')
+            ->assertJsonPath('task.title', 'Follow up: Call me after a month')
+            ->assertJsonPath('task.client_name', 'Gaurav Tokarkar')
+            ->assertJsonPath('task.notes.0.note', 'Call me after a month');
+
+        $taskId = $response->json('note.task_id');
+        $this->assertNotNull($taskId);
+        $this->assertDatabaseHas('tasks', [
+            'id' => $taskId,
+            'client_name' => 'Gaurav Tokarkar',
+            'title' => 'Follow up: Call me after a month',
+        ]);
+        $this->assertDatabaseHas('task_notes', [
+            'task_id' => $taskId,
+            'note' => 'Call me after a month',
+        ]);
+
+        $storedNotes = json_decode($lead->fresh()->notes, true);
+        $this->assertSame($taskId, $storedNotes[0]['task_id']);
     }
 }

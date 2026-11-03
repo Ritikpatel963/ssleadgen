@@ -140,23 +140,15 @@ async function addLeadNote(leadName, leadId) {
     const totalNotes = leadNotes[leadName].length;
     for (let i = totalNotes - 1; i >= 0; i--) {
         const note = leadNotes[leadName][i];
-        const noteNum = totalNotes - i;
         notesHtml += `
-            <div class="p-3 shadow-none border rounded-3 mb-2" style="flex-shrink:0; border: 1px solid #e2e8f0 !important; background: #ffffff; overflow: visible;">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="bg-soft-primary text-primary rounded-circle fw-bold flex-shrink-0" style="width:22px;height:22px;min-width:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">
-                            <i class="feather-file-text" style="line-height:1;"></i>
-                        </div>
-                        <span class="fw-bold text-dark fs-12">#${noteNum}</span>
-                        <span class="badge bg-soft-primary text-primary fs-11 px-2 d-inline-flex align-items-center" style="padding-top:2px;padding-bottom:2px;"><i class="feather-edit-2 me-1"></i>Lead Note</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                        <span class="fs-11 text-muted d-flex align-items-center gap-1"><i class="feather-clock" style="line-height:1;"></i> ${note.timestamp || ''}</span>
+            <div class="p-3 ${i < totalNotes - 1 ? 'border-top' : ''}">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="fs-13 text-dark text-start fw-normal flex-grow-1" style="white-space: pre-wrap; line-height: 1.6; word-break: break-word;"><span class="fw-bold text-dark">${totalNotes - i}.</span> ${escapeHtml(note.text || '')}</div>
+                    <div class="d-flex align-items-center justify-content-end gap-2 flex-shrink-0">
+                        <span class="fs-11 text-muted d-flex align-items-center gap-1"><i class="feather-clock" style="line-height:1;"></i> ${escapeHtml(note.timestamp || '')}</span>
                         <button class="btn btn-outline-info btn-sm fw-bold flex-shrink-0 js-convert-note-to-task" data-lead-name="${escapeHtml(leadName)}" data-note-index="${i}" data-lead-id="${leadId}" style="font-size:10px;padding:2px 8px;" type="button"><i class="feather-plus me-1"></i>Convert to Task</button>
                     </div>
                 </div>
-                <div class="fs-13 text-dark fw-normal" style="white-space: pre-wrap; line-height: 1.6; word-break: break-word;">${note.text || ''}</div>
             </div>`;
     }
     $('#leadNotesContainer').html(notesHtml);
@@ -302,23 +294,15 @@ function openLeadDetailModal(name, phone, email, source, cover, stage, advisor, 
     const totalNotes = leadNotes[name].length;
     for (let i = totalNotes - 1; i >= 0; i--) {
         const note = leadNotes[name][i];
-        const noteNum = totalNotes - i;
         notesHtml += `
-            <div class="p-3 shadow-none border rounded-3 mb-2" style="flex-shrink:0; border: 1px solid #e2e8f0 !important; background: #ffffff; overflow: visible;">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="bg-soft-primary text-primary rounded-circle fw-bold flex-shrink-0" style="width:22px;height:22px;min-width:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">
-                            <i class="feather-file-text" style="line-height:1;"></i>
-                        </div>
-                        <span class="fw-bold text-dark fs-12">#${noteNum}</span>
-                        <span class="badge bg-soft-primary text-primary fs-11 px-2 d-inline-flex align-items-center" style="padding-top:2px;padding-bottom:2px;"><i class="feather-edit-2 me-1"></i>Lead Note</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                        <span class="fs-11 text-muted d-flex align-items-center gap-1"><i class="feather-clock" style="line-height:1;"></i> ${note.timestamp || ''}</span>
+            <div class="p-3 ${i < totalNotes - 1 ? 'border-top' : ''}">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="fs-13 text-dark text-start fw-normal flex-grow-1" style="white-space: pre-wrap; line-height: 1.6; word-break: break-word;"><span class="fw-bold text-dark">${totalNotes - i}.</span> ${escapeHtml(note.text || '')}</div>
+                    <div class="d-flex align-items-center justify-content-end gap-2 flex-shrink-0">
+                        <span class="fs-11 text-muted d-flex align-items-center gap-1"><i class="feather-clock" style="line-height:1;"></i> ${escapeHtml(note.timestamp || '')}</span>
                         <button class="btn btn-outline-info btn-sm fw-bold flex-shrink-0 js-convert-note-to-task" data-lead-name="${escapeHtml(name)}" data-note-index="${i}" data-lead-id="${leadId}" style="font-size:10px;padding:2px 8px;" type="button"><i class="feather-plus me-1"></i>Convert to Task</button>
                     </div>
                 </div>
-                <div class="fs-13 text-dark fw-normal" style="white-space: pre-wrap; line-height: 1.6; word-break: break-word;">${note.text || ''}</div>
             </div>`;
     }
 
@@ -345,7 +329,7 @@ function openLeadDetailModal(name, phone, email, source, cover, stage, advisor, 
 
         <div class="card-widget p-3 mb-3">
             <h6 class="fw-bold text-dark mb-2"><i class="feather-file-text me-1 text-primary"></i> Advisor Underwriting Notes</h6>
-            <div id="leadNotesContainer" class="d-flex flex-column gap-2 mb-3" style="max-height: 320px; overflow-y: auto; padding-right: 4px;">
+            <div id="leadNotesContainer" class="border rounded-3 bg-white mb-3" style="max-height: 320px; overflow-y: auto; padding-right: 4px;">
                 ${notesHtml}
             </div>
             <div class="d-flex flex-column gap-2 mt-2 pt-2 border-top">
